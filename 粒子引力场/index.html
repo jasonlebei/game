@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>粒子引力场</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --bg-deep: #050810;
+      --fg: #e8edf5;
+      --muted: #4a5568;
+      --accent: #00f0ff;
+      --accent-secondary: #ff6b35;
+      --card: rgba(15, 23, 42, 0.8);
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .ui-overlay {
+      position: fixed;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .ui-overlay > * {
+      pointer-events: auto;
+    }
+
+    .header {
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .logo-text {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .stats {
+      display: flex;
+      gap: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .stat-value {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .controls {
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .mode-btn {
+      padding: 0.625rem 1.25rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .mode-btn:hover {
+      border-color: var(--accent);
+      color: var(--fg);
+    }
+
+    .mode-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(255, 107, 53, 0.1));
+      border-color: var(--accent);
+      color: var(--fg);
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      animation: pulse-subtle 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .force-indicator {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .force-indicator.visible {
+      opacity: 1;
+    }
+
+    .force-ring {
+      width: 80px;
+      height: 80px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      animation: force-pulse 1s ease-out infinite;
+    }
+
+    .force-indicator.repel .force-ring {
+      border-color: var(--accent-secondary);
+    }
+
+    @keyframes force-pulse {
+      0% {
+        transform: scale(0.5);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .center-info {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .center-info.visible {
+      opacity: 1;
+    }
+
+    .center-number {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .center-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      margin-top: 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hint, .force-ring {
+        animation: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      
+      .stats {
+        text-align: left;
+      }
+      
+      .controls {
+        padding: 1rem;
+      }
+      
+      .mode-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+      }
+      
+      .hint {
+        font-size: 0.6875rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" aria-label="粒子引力场交互动画"></canvas>
+  
+  <div class="force-indicator" id="forceIndicator">
+    <div class="force-ring"></div>
+  </div>
+  
+  <div class="center-info" id="centerInfo">
+    <div class="center-number" id="particleCount">0</div>
+    <div class="center-label">PARTICLES</div>
+  </div>
+
+  <div class="ui-overlay header">
+    <div class="logo">
+      <span class="logo-text">GRAVITY FIELD</span>
+      <span class="logo-sub">INTERACTIVE PARTICLE SYSTEM</span>
+    </div>
+    <div class="stats">
+      <div>FPS <span class="stat-value" id="fpsDisplay">60</span></div>
+      <div>PARTICLES <span class="stat-value" id="particleDisplay">0</span></div>
+    </div>
+  </div>
+
+  <div class="ui-overlay controls">
+    <div class="mode-selector" role="tablist" aria-label="交互模式选择">
+      <button class="mode-btn active" data-mode="attract" role="tab" aria-selected="true">吸引</button>
+      <button class="mode-btn" data-mode="repel" role="tab" aria-selected="false">排斥</button>
+      <button class="mode-btn" data-mode="orbit" role="tab" aria-selected="false">环绕</button>
+    </div>
+    <div class="hint" id="hint">触摸或点击屏幕与粒子互动</div>
+  </div>
+
+  <script>
+    // Configuration
+    const CONFIG = {
+      particleCount: 300,
+      minRadius: 1.5,
+      maxRadius: 4,
+      baseSpeed: 0.8,
+      trailAlpha: 0.08,
+      forceRadius: 180,
+      forceStrength: 8,
+      friction: 0.97,
+      colorPrimary: '#00f0ff',
+      colorSecondary: '#ff6b35',
+      colorTertiary: '#a855f7',
+      glowIntensity: 0.6
+    };
+
+    // State
+    let particles = [];
+    let canvas, ctx;
+    let width, height;
+    let pointer = { x: null, y: null, active: false };
+    let currentMode = 'attract';
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fps = 60;
+    let reducedMotion = false;
+
+    // Check for reduced motion preference
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion = motionQuery.matches;
+    motionQuery.addEventListener('change', (e) => {
+      reducedMotion = e.matches;
+    });
+
+    // Particle class
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * CONFIG.baseSpeed * 2;
+        this.vy = (Math.random() - 0.5) * CONFIG.baseSpeed * 2;
+        this.radius = CONFIG.minRadius + Math.random() * (CONFIG.maxRadius - CONFIG.minRadius);
+        this.baseRadius = this.radius;
+        this.colorIndex = Math.random();
+        this.alpha = 0.6 + Math.random() * 0.4;
+        this.pulseOffset = Math.random() * Math.PI * 2;
+      }
+
+      getColor() {
+        const t = this.colorIndex;
+        if (t < 0.33) {
+          return CONFIG.colorPrimary;
+        } else if (t < 0.66) {
+          return CONFIG.colorSecondary;
+        } else {
+          return CONFIG.colorTertiary;
+        }
+      }
+
+      update(time) {
+        // Apply force if pointer is active
+        if (pointer.active && pointer.x !== null) {
+          const dx = pointer.x - this.x;
+          const dy = pointer.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < CONFIG.forceRadius && dist > 1) {
+            const force = (1 - dist / CONFIG.forceRadius) * CONFIG.forceStrength;
+            const angle = Math.atan2(dy, dx);
+            
+            if (currentMode === 'attract') {
+              this.vx += Math.cos(angle) * force * 0.02;
+              this.vy += Math.sin(angle) * force * 0.02;
+            } else if (currentMode === 'repel') {
+              this.vx -= Math.cos(angle) * force * 0.04;
+              this.vy -= Math.sin(angle) * force * 0.04;
+            } else if (currentMode === 'orbit') {
+              // Perpendicular force for orbit
+              this.vx += Math.cos(angle + Math.PI / 2) * force * 0.015;
+              this.vy += Math.sin(angle + Math.PI / 2) * force * 0.015;
+              // Gentle attraction
+              this.vx += Math.cos(angle) * force * 0.005;
+              this.vy += Math.sin(angle) * force * 0.005;
+            }
+          }
+        }
+
+        // Apply velocity with friction
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= CONFIG.friction;
+        this.vy *= CONFIG.friction;
+
+        // Pulse effect
+        if (!reducedMotion) {
+          const pulse = Math.sin(time * 0.002 + this.pulseOffset) * 0.3;
+          this.radius = this.baseRadius * (1 + pulse * 0.3);
+        }
+
+        // Wrap around edges
+        const margin = 50;
+        if (this.x < -margin) this.x = width + margin;
+        if (this.x > width + margin) this.x = -margin;
+        if (this.y < -margin) this.y = height + margin;
+        if (this.y > height + margin) this.y = -margin;
+      }
+
+      draw() {
+        const color = this.getColor();
+        const radius = Math.max(0.5, this.radius);
+        
+        // Glow effect
+        if (!reducedMotion) {
+          const gradient = ctx.createRadialGradient(
+            this.x, this.y, 0,
+            this.x, this.y, radius * 3
+          );
+          gradient.addColorStop(0, color + Math.round(this.alpha * CONFIG.glowIntensity * 255).toString(16).padStart(2, '0'));
+          gradient.addColorStop(1, color + '00');
+          
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, radius * 3, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color + Math.round(this.alpha * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      }
+    }
+
+    // Initialize
+    function init() {
+      canvas = document.getElementById('canvas');
+      ctx = canvas.getContext('2d');
+      
+      resize();
+      
+      // Create particles after canvas is sized
+      particles = [];
+      for (let i = 0; i < CONFIG.particleCount; i++) {
+        particles.push(new Particle());
+      }
+
+      // Event listeners
+      window.addEventListener('resize', resize);
+      
+      // Mouse events
+      canvas.addEventListener('mousedown', handlePointerDown);
+      canvas.addEventListener('mousemove', handlePointerMove);
+      canvas.addEventListener('mouseup', handlePointerUp);
+      canvas.addEventListener('mouseleave', handlePointerUp);
+      
+      // Touch events
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd);
+      canvas.addEventListener('touchcancel', handleTouchEnd);
+
+      // Mode buttons
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.mode-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+          currentMode = btn.dataset.mode;
+          
+          // Update force indicator color
+          const indicator = document.getElementById('forceIndicator');
+          indicator.classList.toggle('repel', currentMode === 'repel');
+        });
+      });
+
+      // Show center info briefly
+      const centerInfo = document.getElementById('centerInfo');
+      const particleCountEl = document.getElementById('particleCount');
+      particleCountEl.textContent = CONFIG.particleCount;
+      centerInfo.classList.add('visible');
+      setTimeout(() => {
+        centerInfo.classList.remove('visible');
+      }, 2000);
+
+      // Start animation
+      animate();
+    }
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      
+      ctx.scale(dpr, dpr);
+    }
+
+    function handlePointerDown(e) {
+      pointer.active = true;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      showForceIndicator();
+    }
+
+    function handlePointerMove(e) {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      updateForceIndicator();
+    }
+
+    function handlePointerUp() {
+      pointer.active = false;
+      hideForceIndicator();
+    }
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      pointer.active = true;
+      pointer.x = touch.clientX;
+      pointer.y = touch.clientY;
+      showForceIndicator();
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      pointer.x = touch.clientX;
+      pointer.y = touch.clientY;
+      updateForceIndicator();
+    }
+
+    function handleTouchEnd() {
+      pointer.active = false;
+      hideForceIndicator();
+    }
+
+    function showForceIndicator() {
+      document.getElementById('forceIndicator').classList.add('visible');
+      document.getElementById('hint').style.opacity = '0';
+    }
+
+    function hideForceIndicator() {
+      document.getElementById('forceIndicator').classList.remove('visible');
+      document.getElementById('hint').style.opacity = '';
+    }
+
+    function updateForceIndicator() {
+      const indicator = document.getElementById('forceIndicator');
+      indicator.style.left = pointer.x + 'px';
+      indicator.style.top = pointer.y + 'px';
+    }
+
+    function animate(time) {
+      time = time || performance.now();
+      
+      // FPS calculation
+      frameCount++;
+      if (time - lastTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastTime = time;
+        document.getElementById('fpsDisplay').textContent = fps;
+      }
+
+      // Trail effect
+      ctx.fillStyle = `rgba(10, 14, 23, ${CONFIG.trailAlpha})`;
+      ctx.fillRect(0, 0, width, height);
+
+      // Update and draw particles
+      particles.forEach(p => {
+        p.update(time);
+        p.draw();
+      });
+
+      // Update particle count display
+      document.getElementById('particleDisplay').textContent = particles.length;
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
