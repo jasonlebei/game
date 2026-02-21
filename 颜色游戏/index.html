@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>反应测试 - 颜色匹配</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg-secondary: #12121a;
+            --fg: #e8e8ec;
+            --muted: #6b6b7a;
+            --border: #2a2a3a;
+            --accent: #00ffaa;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+            --card: rgba(18, 18, 26, 0.8);
+        }
+        
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        .font-display {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        /* 动态背景 */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 255, 170, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 170, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+        
+        .bg-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+        
+        .glow-1 {
+            top: -100px;
+            left: -100px;
+            background: var(--accent);
+        }
+        
+        .glow-2 {
+            bottom: -100px;
+            right: -100px;
+            background: var(--danger);
+        }
+        
+        /* 颜色选项按钮 */
+        .color-btn {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 16px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            overflow: hidden;
+        }
+        
+        .color-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            background: rgba(255,255,255,0.3);
+            transition: opacity 0.15s;
+        }
+        
+        .color-btn:active::before {
+            opacity: 1;
+        }
+        
+        .color-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .color-btn.correct {
+            animation: correctPulse 0.3s ease;
+        }
+        
+        .color-btn.wrong {
+            animation: wrongShake 0.4s ease;
+        }
+        
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px currentColor; }
+        }
+        
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        
+        /* 目标颜色显示 */
+        .target-display {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .target-display.pop {
+            animation: targetPop 0.3s ease;
+        }
+        
+        @keyframes targetPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* 分数动画 */
+        .score-pop {
+            position: absolute;
+            font-weight: 700;
+            pointer-events: none;
+            animation: scorePop 0.6s ease forwards;
+        }
+        
+        @keyframes scorePop {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+        
+        /* 进度条 */
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #00ddff);
+            transition: width 0.3s ease;
+        }
+        
+        /* 倒计时 */
+        .countdown {
+            animation: countdownPulse 1s ease infinite;
+        }
+        
+        @keyframes countdownPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        /* 开始按钮 */
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent), #00ddcc);
+            color: var(--bg);
+            font-weight: 700;
+            padding: 16px 48px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 255, 170, 0.3);
+        }
+        
+        .start-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 10px rgba(0, 255, 170, 0.2);
+        }
+        
+        /* 结果面板 */
+        .result-panel {
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* 时间条动画 */
+        .time-bar {
+            transition: width linear;
+        }
+        
+        .time-bar.urgent {
+            background: linear-gradient(90deg, var(--danger), var(--warning)) !important;
+            animation: urgentPulse 0.3s ease infinite;
+        }
+        
+        @keyframes urgentPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景层 -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    
+    <div id="app" class="relative z-10 min-h-screen min-h-[100dvh] flex flex-col p-4">
+        
+        <!-- 顶部状态栏 -->
+        <header class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center">
+                    <span class="font-display text-lg" style="color: var(--accent);" id="levelDisplay">1</span>
+                </div>
+                <div>
+                    <div class="text-xs text-[var(--muted)]">关卡</div>
+                    <div class="font-display text-sm">LEVEL</div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-xs text-[var(--muted)]">得分</div>
+                <div class="font-display text-2xl" style="color: var(--accent);" id="scoreDisplay">0</div>
+            </div>
+            
+            <div class="text-right">
+                <div class="text-xs text-[var(--muted)]">最佳</div>
+                <div class="font-display text-lg" id="bestDisplay">0</div>
+            </div>
+        </header>
+        
+        <!-- 进度条 -->
+        <div class="progress-bar mb-4">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        
+        <!-- 主游戏区域 -->
+        <main class="flex-1 flex flex-col items-center justify-center gap-6" id="gameArea">
+            
+            <!-- 开始界面 -->
+            <div id="startScreen" class="text-center">
+                <h1 class="font-display text-3xl sm:text-4xl mb-2" style="color: var(--accent);">反应测试</h1>
+                <p class="text-[var(--muted)] mb-2">颜色匹配反应</p>
+                <p class="text-sm text-[var(--muted)] mb-8 max-w-xs mx-auto">
+                    点击与目标文字颜色相同的色块<br>越快越准，分数越高
+                </p>
+                <button class="start-btn font-display" onclick="startGame()">开始挑战</button>
+            </div>
+            
+            <!-- 游戏界面 -->
+            <div id="gameScreen" class="hidden w-full max-w-sm">
+                
+                <!-- 时间条 -->
+                <div class="progress-bar mb-6 h-2 rounded-full">
+                    <div class="time-bar h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[#00ddff]" id="timeBar" style="width: 100%"></div>
+                </div>
+                
+                <!-- 目标显示 -->
+                <div class="target-display text-center mb-8 p-6 rounded-2xl" style="background: var(--card); border: 1px solid var(--border);" id="targetBox">
+                    <div class="text-xs text-[var(--muted)] mb-2">点击颜色</div>
+                    <div class="font-display text-4xl sm:text-5xl font-bold" id="targetText">红</div>
+                </div>
+                
+                <!-- 颜色选项 -->
+                <div class="grid grid-cols-4 gap-3" id="colorOptions">
+                    <!-- 动态生成 -->
+                </div>
+                
+                <!-- 连击显示 -->
+                <div class="text-center mt-4">
+                    <span class="text-sm text-[var(--muted)]">连击 </span>
+                    <span class="font-display text-xl" style="color: var(--warning);" id="comboDisplay">0</span>
+                </div>
+            </div>
+            
+            <!-- 结果界面 -->
+            <div id="resultScreen" class="hidden text-center result-panel">
+                <div class="text-xs text-[var(--muted)] mb-2">游戏结束</div>
+                <div class="font-display text-5xl mb-2" style="color: var(--accent);" id="finalScore">0</div>
+                <div class="text-[var(--muted)] mb-6">最终得分</div>
+                
+                <div class="grid grid-cols-3 gap-4 mb-8 p-4 rounded-xl" style="background: var(--card); border: 1px solid var(--border);">
+                    <div>
+                        <div class="text-xs text-[var(--muted)]">正确</div>
+                        <div class="font-display text-xl" style="color: var(--accent);" id="resultCorrect">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-[var(--muted)]">错误</div>
+                        <div class="font-display text-xl" style="color: var(--danger);" id="resultWrong">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-[var(--muted)]">最高连击</div>
+                        <div class="font-display text-xl" style="color: var(--warning);" id="resultCombo">0</div>
+                    </div>
+                </div>
+                
+                <button class="start-btn font-display" onclick="startGame()">再来一局</button>
+            </div>
+            
+        </main>
+        
+        <!-- 底部提示 -->
+        <footer class="text-center text-xs text-[var(--muted)] py-2">
+            点击与文字<span style="color: var(--accent);">颜色</span>相同的方块
+        </footer>
+        
+    </div>
+
+    <script>
+        // 游戏配置
+        const COLORS = [
+            { name: '红', color: '#ff3366' },
+            { name: '蓝', color: '#3388ff' },
+            { name: '绿', color: '#00cc66' },
+            { name: '黄', color: '#ffcc00' },
+            { name: '紫', color: '#aa44ff' },
+            { name: '橙', color: '#ff8833' },
+            { name: '青', color: '#00cccc' },
+            { name: '粉', color: '#ff66aa' }
+        ];
+        
+        // 游戏状态
+        let gameState = {
+            score: 0,
+            level: 1,
+            combo: 0,
+            maxCombo: 0,
+            correct: 0,
+            wrong: 0,
+            targetColor: null,
+            timeLeft: 100,
+            isPlaying: false,
+            totalTime: 3000,
+            timer: null,
+            bestScore: parseInt(localStorage.getItem('reactionBest') || '0')
+        };
+        
+        // DOM 元素
+        const elements = {
+            startScreen: document.getElementById('startScreen'),
+            gameScreen: document.getElementById('gameScreen'),
+            resultScreen: document.getElementById('resultScreen'),
+            targetText: document.getElementById('targetText'),
+            targetBox: document.getElementById('targetBox'),
+            colorOptions: document.getElementById('colorOptions'),
+            scoreDisplay: document.getElementById('scoreDisplay'),
+            levelDisplay: document.getElementById('levelDisplay'),
+            bestDisplay: document.getElementById('bestDisplay'),
+            comboDisplay: document.getElementById('comboDisplay'),
+            timeBar: document.getElementById('timeBar'),
+            progressFill: document.getElementById('progressFill'),
+            finalScore: document.getElementById('finalScore'),
+            resultCorrect: document.getElementById('resultCorrect'),
+            resultWrong: document.getElementById('resultWrong'),
+            resultCombo: document.getElementById('resultCombo')
+        };
+        
+        // 初始化显示最佳分数
+        elements.bestDisplay.textContent = gameState.bestScore;
+        
+        // 开始游戏
+        function startGame() {
+            // 重置状态
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.correct = 0;
+            gameState.wrong = 0;
+            gameState.isPlaying = true;
+            gameState.totalTime = 3000;
+            
+            // 更新显示
+            updateDisplay();
+            
+            // 切换界面
+            elements.startScreen.classList.add('hidden');
+            elements.resultScreen.classList.add('hidden');
+            elements.gameScreen.classList.remove('hidden');
+            
+            // 生成第一题
+            nextRound();
+        }
+        
+        // 生成新回合
+        function nextRound() {
+            if (!gameState.isPlaying) return;
+            
+            // 选择目标颜色
+            const targetColorIndex = Math.floor(Math.random() * COLORS.length);
+            gameState.targetColor = COLORS[targetColorIndex];
+            
+            // 显示目标文字（用随机颜色显示）
+            let displayColorIndex;
+            do {
+                displayColorIndex = Math.floor(Math.random() * COLORS.length);
+            } while (displayColorIndex === targetColorIndex);
+            
+            elements.targetText.textContent = COLORS[displayColorIndex].name;
+            elements.targetText.style.color = gameState.targetColor.color;
+            
+            // 弹出动画
+            elements.targetBox.classList.remove('pop');
+            void elements.targetBox.offsetWidth;
+            elements.targetBox.classList.add('pop');
+            
+            // 生成选项
+            generateOptions(targetColorIndex);
+            
+            // 开始计时
+            startTimer();
+        }
+        
+        // 生成颜色选项
+        function generateOptions(correctIndex) {
+            elements.colorOptions.innerHTML = '';
+            
+            // 随机排列选项
+            const indices = [...Array(COLORS.length).keys()];
+            shuffleArray(indices);
+            
+            // 只显示4个选项，包含正确答案
+            const optionIndices = indices.slice(0, 4);
+            if (!optionIndices.includes(correctIndex)) {
+                optionIndices[0] = correctIndex;
+                shuffleArray(optionIndices);
+            }
+            
+            optionIndices.forEach(i => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = COLORS[i].color;
+                btn.style.color = COLORS[i].color;
+                btn.dataset.index = i;
+                btn.setAttribute('aria-label', COLORS[i].name);
+                
+                btn.addEventListener('click', () => handleChoice(i));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleChoice(i);
+                }, { passive: false });
+                
+                elements.colorOptions.appendChild(btn);
+            });
+        }
+        
+        // 处理选择
+        function handleChoice(index) {
+            if (!gameState.isPlaying) return;
+            
+            clearInterval(gameState.timer);
+            
+            const isCorrect = COLORS[index].name === gameState.targetColor.name;
+            const btn = elements.colorOptions.children[
+                [...elements.colorOptions.children].findIndex(
+                    b => parseInt(b.dataset.index) === index
+                )
+            ];
+            
+            if (isCorrect) {
+                // 正确
+                btn.classList.add('correct');
+                gameState.combo++;
+                gameState.correct++;
+                if (gameState.combo > gameState.maxCombo) {
+                    gameState.maxCombo = gameState.combo;
+                }
+                
+                // 计算分数（时间奖励 + 连击奖励）
+                const timeBonus = Math.floor(gameState.timeLeft * 0.5);
+                const comboBonus = gameState.combo * 10;
+                const levelBonus = gameState.level * 5;
+                const points = 100 + timeBonus + comboBonus + levelBonus;
+                gameState.score += points;
+                
+                // 显示得分弹出
+                showScorePop(points, btn);
+                
+                // 升级检查
+                if (gameState.correct % 10 === 0) {
+                    gameState.level++;
+                    gameState.totalTime = Math.max(1500, 3000 - gameState.level * 150);
+                }
+                
+            } else {
+                // 错误
+                btn.classList.add('wrong');
+                gameState.combo = 0;
+                gameState.wrong++;
+                
+                // 扣分
+                gameState.score = Math.max(0, gameState.score - 50);
+            }
+            
+            updateDisplay();
+            
+            // 检查游戏结束
+            if (gameState.wrong >= 3) {
+                setTimeout(endGame, 500);
+            } else {
+                setTimeout(nextRound, isCorrect ? 300 : 600);
+            }
+        }
+        
+        // 显示得分弹出
+        function showScorePop(points, btn) {
+            const pop = document.createElement('div');
+            pop.className = 'score-pop font-display';
+            pop.textContent = '+' + points;
+            pop.style.color = '#00ffaa';
+            pop.style.left = '50%';
+            pop.style.top = '50%';
+            pop.style.transform = 'translate(-50%, -50%)';
+            btn.style.position = 'relative';
+            btn.appendChild(pop);
+            
+            setTimeout(() => pop.remove(), 600);
+        }
+        
+        // 开始计时
+        function startTimer() {
+            gameState.timeLeft = 100;
+            elements.timeBar.style.width = '100%';
+            elements.timeBar.style.transition = 'none';
+            elements.timeBar.classList.remove('urgent');
+            
+            const startTime = Date.now();
+            const duration = gameState.totalTime;
+            
+            clearInterval(gameState.timer);
+            gameState.timer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, 100 - (elapsed / duration * 100));
+                gameState.timeLeft = remaining;
+                
+                elements.timeBar.style.transition = 'width 0.05s linear';
+                elements.timeBar.style.width = remaining + '%';
+                
+                if (remaining < 30) {
+                    elements.timeBar.classList.add('urgent');
+                }
+                
+                if (remaining <= 0) {
+                    clearInterval(gameState.timer);
+                    // 超时算错误
+                    gameState.combo = 0;
+                    gameState.wrong++;
+                    updateDisplay();
+                    
+                    if (gameState.wrong >= 3) {
+                        endGame();
+                    } else {
+                        setTimeout(nextRound, 500);
+                    }
+                }
+            }, 16);
+        }
+        
+        // 更新显示
+        function updateDisplay() {
+            elements.scoreDisplay.textContent = gameState.score;
+            elements.levelDisplay.textContent = gameState.level;
+            elements.comboDisplay.textContent = gameState.combo;
+            elements.progressFill.style.width = ((3 - gameState.wrong) / 3 * 100) + '%';
+        }
+        
+        // 结束游戏
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timer);
+            
+            // 更新最佳分数
+            if (gameState.score > gameState.bestScore) {
+                gameState.bestScore = gameState.score;
+                localStorage.setItem('reactionBest', gameState.bestScore.toString());
+                elements.bestDisplay.textContent = gameState.bestScore;
+            }
+            
+            // 显示结果
+            elements.finalScore.textContent = gameState.score;
+            elements.resultCorrect.textContent = gameState.correct;
+            elements.resultWrong.textContent = gameState.wrong;
+            elements.resultCombo.textContent = gameState.maxCombo;
+            
+            // 切换界面
+            elements.gameScreen.classList.add('hidden');
+            elements.resultScreen.classList.remove('hidden');
+        }
+        
+        // 工具函数：打乱数组
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+    </script>
+</body>
+</html>
