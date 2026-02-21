@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霓虹逃亡 - NEON ESCAPE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a12;
+            --fg: #e0e0ff;
+            --muted: #4a4a6a;
+            --accent-cyan: #00f5ff;
+            --accent-magenta: #ff00aa;
+            --accent-orange: #ff6b00;
+            --accent-gold: #ffd700;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: none; /* 禁止浏览器默认触摸行为 */
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .score-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .score-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--fg);
+            text-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        .multiplier {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            color: var(--accent-orange);
+            text-shadow: 0 0 10px var(--accent-orange);
+        }
+
+        .speed-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            display: none; /* 手机端隐藏速度显示，节省空间 */
+        }
+
+        /* 无敌模式按钮 (手机端专用) */
+        .touch-controls {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .invincible-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(20, 20, 40, 0.6);
+            border: 2px solid var(--muted);
+            color: var(--muted);
+            font-family: 'Orbitron', monospace;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .invincible-btn.active {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            animation: pulse-mobile-btn 1.5s infinite;
+        }
+
+        @keyframes pulse-mobile-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .invincible-hint {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            color: var(--accent-gold);
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 5px var(--accent-gold);
+        }
+
+        .invincible-hint.active {
+            opacity: 1;
+        }
+
+        /* 遮罩层 */
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 18, 0.97);
+            pointer-events: auto;
+            z-index: 20;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(28px, 8vw, 64px);
+            font-weight: 900;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-subtitle {
+            font-size: clamp(12px, 3vw, 18px);
+            color: var(--muted);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+
+        .start-btn {
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 15px 40px;
+            background: transparent;
+            color: var(--accent-cyan);
+            border: 2px solid var(--accent-cyan);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .start-btn:active {
+            background: rgba(0, 245, 255, 0.2);
+            transform: scale(0.95);
+        }
+
+        .controls-hint {
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            max-width: 280px;
+            line-height: 1.6;
+        }
+
+        .final-score {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(40px, 10vw, 80px);
+            font-weight: 900;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 30px var(--accent-cyan);
+            margin: 20px 0;
+        }
+
+        .best-score {
+            font-size: 14px;
+            color: var(--accent-magenta);
+            margin-bottom: 30px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 桌面端适配 */
+        @media (min-width: 768px) and (hover: hover) {
+            .speed-indicator { display: block; }
+            .touch-controls { display: none; } /* 桌面端隐藏触摸按钮 */
+            .invincible-hint { display: block; } /* 桌面端显示文字提示 */
+            .score-value { font-size: 48px; }
+            .multiplier { font-size: 18px; top: 90px; }
+            
+            .start-btn:hover {
+                background: rgba(0, 245, 255, 0.1);
+                box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div class="score-panel">
+                <div class="score-label">Score</div>
+                <div class="score-value" id="scoreDisplay">0</div>
+            </div>
+            <div class="multiplier" id="multiplierDisplay">x1</div>
+            
+            <!-- 桌面端无敌提示 -->
+            <div class="invincible-hint" id="invincibleHint">INVINCIBLE ON</div>
+            
+            <!-- 速度指示器 (仅桌面) -->
+            <div class="speed-indicator">
+                <div class="speed-label">Velocity</div>
+                <div class="speed-value" id="speedDisplay">0 km/h</div>
+            </div>
+
+            <!-- 手机端触摸控制 -->
+            <div class="touch-controls">
+                <button class="invincible-btn" id="invincibleBtn">GOD<br>MODE</button>
+            </div>
+        </div>
+
+        <div id="startScreen">
+            <h1 class="game-title">霓虹逃亡</h1>
+            <p class="game-subtitle">Neon Escape</p>
+            <button class="start-btn" id="startBtn">开始游戏</button>
+            <p class="controls-hint">
+                桌面: 按 [空格] 跳跃，按 [I] 切换无敌<br>
+                手机: 点击屏幕跳跃，点击右下角按钮开启无敌
+            </p>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h2 class="game-title">系统崩溃</h2>
+            <div class="final-score" id="finalScore">0</div>
+            <p class="best-score">最高分: <span id="bestScore">0</span></p>
+            <button class="start-btn" id="restartBtn">重新连接</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ 配置 ============
+        const CONFIG = {
+            gravity: 0.8,
+            jumpForce: -15,
+            baseSpeed: 6,
+            maxSpeed: 18,
+            speedIncrement: 0.002,
+            groundHeight: 80,
+            playerWidth: 40,
+            playerHeight: 60,
+        };
+
+        const COLORS = {
+            bg: '#0a0a12',
+            ground: '#00f5ff',
+            player: '#ff00aa',
+            playerInvincible: '#ffd700', // 无敌颜色
+            obstacle: '#ff6b00',
+            grid: 'rgba(0, 245, 255, 0.15)',
+            neonCyan: '#00f5ff',
+            neonMagenta: '#ff00aa',
+            neonOrange: '#ff6b00',
+            neonGold: '#ffd700'
+        };
+
+        // ============ 状态变量 ============
+        let canvas, ctx;
+        let gameState = 'start';
+        let score = 0;
+        let bestScore = parseInt(localStorage.getItem('neonEscapeBest') || '0');
+        let speed = CONFIG.baseSpeed;
+        let multiplier = 1;
+        let frameCount = 0;
+        let isInvincible = false; // 无敌状态
+
+        let player = null;
+        let obstacles = [];
+        let particles = [];
+        let buildings = [];
+        let bgLayers = [];
+        let gridOffset = 0;
+
+        // ============ 初始化 ============
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // UI 事件
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('restartBtn').addEventListener('click', startGame);
+            
+            // 桌面端键盘
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // 手机端无敌按钮
+            const invBtn = document.getElementById('invincibleBtn');
+            invBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // 防止触发跳跃
+                toggleInvincible();
+            });
+            invBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 防止冒泡触发跳跃
+                toggleInvincible();
+            });
+
+            // 游戏跳跃控制
+            // 使用 pointerdown 统一处理鼠标和触摸
+            canvas.addEventListener('pointerdown', (e) => {
+                // 如果点击的是UI区域（如按钮），不处理跳跃
+                if (e.target !== canvas) return;
+                jump();
+            });
+
+            // 防止默认触摸滚动
+            document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+            initBackground();
+            gameLoop();
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (player) {
+                player.groundY = canvas.height - CONFIG.groundHeight - CONFIG.playerHeight;
+                player.y = Math.min(player.y, player.groundY);
+            }
+            initBackground();
+        }
+
+        function initBackground() {
+            buildings = [];
+            const buildingCount = Math.ceil(canvas.width / 100) + 5;
+            for (let i = 0; i < buildingCount; i++) {
+                buildings.push({
+                    x: i * 120 + Math.random() * 60,
+                    width: 40 + Math.random() * 60,
+                    height: 100 + Math.random() * 200,
+                    color: `hsl(${240 + Math.random() * 30}, 30%, ${5 + Math.random() * 10}%)`,
+                    speed: 0.3 + Math.random() * 0.3
+                });
+            }
+            bgLayers = [
+                { speed: 0.5, elements: generateStars(50) },
+                { speed: 1, elements: generateStars(30) }
+            ];
+        }
+
+        function generateStars(count) {
+            const stars = [];
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.6,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random()
+                });
+            }
+            return stars;
+        }
+
+        // ============ 游戏控制 ============
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            speed = CONFIG.baseSpeed;
+            multiplier = 1;
+            frameCount = 0;
+            isInvincible = false; // 重置无敌状态
+            updateInvincibleUI();
+
+            player = {
+                x: canvas.width * 0.15, // 响应式起始位置
+                y: canvas.height - CONFIG.groundHeight - CONFIG.playerHeight,
+                vy: 0,
+                width: CONFIG.playerWidth,
+                height: CONFIG.playerHeight,
+                isJumping: false,
+                groundY: canvas.height - CONFIG.groundHeight - CONFIG.playerHeight,
+                trail: []
+            };
+
+            obstacles = [];
+            particles = [];
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+        }
+
+        function gameOver() {
+            if (isInvincible) return; // 无敌不结束游戏
+            
+            gameState = 'gameover';
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonEscapeBest', Math.floor(bestScore).toString());
+            }
+
+            document.getElementById('finalScore').textContent = Math.floor(score);
+            document.getElementById('bestScore').textContent = Math.floor(bestScore);
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+
+            // 爆炸粒子
+            for (let i = 0; i < 50; i++) {
+                createParticle(player.x + player.width / 2, player.y + player.height / 2, 'explosion');
+            }
+        }
+
+        function toggleInvincible() {
+            isInvincible = !isInvincible;
+            updateInvincibleUI();
+        }
+
+        function updateInvincibleUI() {
+            const hint = document.getElementById('invincibleHint');
+            const btn = document.getElementById('invincibleBtn');
+            
+            if (isInvincible) {
+                hint.classList.add('active');
+                btn.classList.add('active');
+            } else {
+                hint.classList.remove('active');
+                btn.classList.remove('active');
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+            if (e.code === 'KeyI') {
+                toggleInvincible();
+            }
+        }
+
+        function jump() {
+            if (gameState === 'start') {
+                startGame();
+                return;
+            }
+            if (gameState !== 'playing') return;
+
+            if (!player.isJumping) {
+                player.vy = CONFIG.jumpForce;
+                player.isJumping = true;
+                createJumpParticles();
+            }
+        }
+
+        // ============ 游戏循环 ============
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            updateBackground(); // 背景持续更新
+
+            if (gameState !== 'playing') return;
+
+            frameCount++;
+            speed = Math.min(CONFIG.maxSpeed, speed + CONFIG.speedIncrement);
+            score += speed * 0.1 * multiplier;
+
+            if (frameCount % 500 === 0 && multiplier < 5) {
+                multiplier += 0.5;
+            }
+
+            document.getElementById('scoreDisplay').textContent = Math.floor(score);
+            document.getElementById('speedDisplay').textContent = Math.floor(speed * 20) + ' km/h';
+            document.getElementById('multiplierDisplay').textContent = 'x' + multiplier.toFixed(1);
+
+            updatePlayer();
+            updateObstacles();
+            updateParticles();
+            checkCollisions();
+        }
+
+        function updatePlayer() {
+            player.vy += CONFIG.gravity;
+            player.y += player.vy;
+
+            if (player.y >= player.groundY) {
+                player.y = player.groundY;
+                player.vy = 0;
+                player.isJumping = false;
+            }
+
+            player.trail.unshift({ x: player.x, y: player.y + player.height / 2 });
+            if (player.trail.length > 15) player.trail.pop();
+        }
+
+        function updateObstacles() {
+            const lastObstacle = obstacles[obstacles.length - 1];
+            const minGap = 200 + (CONFIG.maxSpeed - speed) * 10; // 手机端间距稍大一点
+
+            if (!lastObstacle || lastObstacle.x < canvas.width - minGap) {
+                const types = ['spike', 'barrier', 'drone'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                let obs = {
+                    x: canvas.width + 50,
+                    type: type,
+                    passed: false
+                };
+
+                if (type === 'spike') {
+                    obs.width = 30; obs.height = 50;
+                    obs.y = canvas.height - CONFIG.groundHeight - obs.height;
+                } else if (type === 'barrier') {
+                    obs.width = 60; obs.height = 80;
+                    obs.y = canvas.height - CONFIG.groundHeight - obs.height;
+                } else if (type === 'drone') {
+                    obs.width = 50; obs.height = 30;
+                    obs.y = canvas.height - CONFIG.groundHeight - 120 - Math.random() * 80;
+                    obs.hover = 0;
+                }
+                obstacles.push(obs);
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= speed;
+                if (obs.type === 'drone') {
+                    obs.hover += 0.1;
+                    obs.y += Math.sin(obs.hover) * 0.5;
+                }
+                if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vy += p.gravity || 0;
+                p.life -= p.decay;
+                p.size *= 0.98;
+                if (p.life <= 0 || p.size < 0.5) particles.splice(i, 1);
+            }
+            if (frameCount % 3 === 0 && player && !player.isJumping) createRunParticles();
+        }
+
+        function updateBackground() {
+            if (gameState !== 'playing') return;
+            
+            gridOffset += speed;
+            if (gridOffset > 100) gridOffset = 0;
+
+            for (const b of buildings) {
+                b.x -= speed * b.speed;
+                if (b.x + b.width < 0) {
+                    b.x = canvas.width + Math.random() * 100;
+                    b.height = 100 + Math.random() * 200;
+                }
+            }
+
+            for (const layer of bgLayers) {
+                for (const star of layer.elements) {
+                    star.x -= speed * layer.speed;
+                    if (star.x < 0) {
+                        star.x = canvas.width;
+                        star.y = Math.random() * canvas.height * 0.6;
+                    }
+                }
+            }
+        }
+
+        function checkCollisions() {
+            if (isInvincible) return; // 无敌跳过碰撞
+
+            const px = player.x, py = player.y;
+            const pw = player.width, ph = player.height;
+            const margin = 10; // 宽容碰撞箱
+
+            for (const obs of obstacles) {
+                if (px + pw - margin > obs.x + margin &&
+                    px + margin < obs.x + obs.width - margin &&
+                    py + ph - margin > obs.y + margin &&
+                    py + margin < obs.y + obs.height - margin) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        // ============ 渲染 ============
+        function render() {
+            ctx.fillStyle = COLORS.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            renderBackground();
+            renderBuildings();
+            renderGrid();
+            renderObstacles();
+            renderParticles();
+            
+            if (player && gameState === 'playing') {
+                renderPlayer();
+            }
+        }
+
+        function renderBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#050510');
+            gradient.addColorStop(0.5, '#0a0a1a');
+            gradient.addColorStop(1, '#151525');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (const layer of bgLayers) {
+                for (const star of layer.elements) {
+                    const alpha = 0.3 + star.brightness * 0.7;
+                    ctx.fillStyle = `rgba(200, 220, 255, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function renderBuildings() {
+            const groundY = canvas.height - CONFIG.groundHeight;
+            for (const b of buildings) {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, groundY - b.height, b.width, b.height);
+                
+                // 窗户 (简化计算)
+                const windowRows = Math.floor(b.height / 25);
+                const windowCols = Math.floor(b.width / 20);
+                for (let r = 0; r < windowRows; r++) {
+                    for (let c = 0; c < windowCols; c++) {
+                        if (Math.random() > 0.3) {
+                             const wx = b.x + 8 + c * 18;
+                             const wy = groundY - b.height + 10 + r * 22;
+                             const colors = ['rgba(0,245,255,0.5)', 'rgba(255,0,170,0.4)', 'rgba(255,107,0,0.4)'];
+                             ctx.fillStyle = colors[Math.floor(Math.random()*3)];
+                             ctx.fillRect(wx, wy, 10, 12);
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderGrid() {
+            const groundY = canvas.height - CONFIG.groundHeight;
+            ctx.fillStyle = 'rgba(0, 20, 30, 0.9)';
+            ctx.fillRect(0, groundY, canvas.width, CONFIG.groundHeight);
+
+            ctx.strokeStyle = COLORS.grid;
+            ctx.lineWidth = 1;
+            const gridSpacing = 40;
+
+            // 水平线
+            for (let i = 0; i < 4; i++) {
+                const y = groundY + i * 20;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            
+            // 透视线
+            for (let x = -gridOffset; x < canvas.width + gridSpacing; x += gridSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x + (canvas.width / 2 - x) * 0.3, canvas.height);
+                ctx.stroke();
+            }
+
+            // 顶部发光线
+            ctx.strokeStyle = COLORS.neonCyan;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = COLORS.neonCyan;
+            ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function renderPlayer() {
+            const px = player.x, py = player.y;
+            const pw = player.width, ph = player.height;
+            
+            // 颜色逻辑
+            const mainColor = isInvincible ? COLORS.neonGold : COLORS.neonMagenta;
+            const glowColor = isInvincible ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 0, 170, 0.6)';
+
+            // 轨迹
+            for (let i = 0; i < player.trail.length; i++) {
+                const t = player.trail[i];
+                const alpha = (1 - i / player.trail.length) * 0.6;
+                const size = (1 - i / player.trail.length) * 8;
+                ctx.fillStyle = isInvincible ? `rgba(255, 215, 0, ${alpha})` : `rgba(255, 0, 170, ${alpha})`;
+                ctx.beginPath(); ctx.arc(t.x, t.y, Math.max(1, size), 0, Math.PI * 2); ctx.fill();
+            }
+
+            ctx.shadowColor = mainColor;
+            ctx.shadowBlur = isInvincible ? 40 : 25;
+            ctx.fillStyle = mainColor;
+
+            // 身体
+            ctx.fillRect(px + 10, py + 20, pw - 20, ph - 30);
+            
+            // 头
+            ctx.beginPath(); ctx.arc(px + pw / 2, py + 12, 12, 0, Math.PI * 2); ctx.fill();
+            
+            // 腿
+            const legOffset = Math.sin(frameCount * 0.3) * 5;
+            ctx.fillRect(px + 12, py + ph - 15, 8, 15);
+            ctx.fillRect(px + pw - 20, py + ph - 15, 8, 15);
+
+            // 眼睛
+            ctx.fillStyle = isInvincible ? '#fff' : COLORS.neonCyan;
+            ctx.fillRect(px + pw / 2 - 8, py + 8, 16, 4);
+
+            ctx.shadowBlur = 0;
+        }
+
+        function renderObstacles() {
+            for (const obs of obstacles) {
+                ctx.shadowColor = COLORS.neonOrange;
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = COLORS.neonOrange;
+
+                if (obs.type === 'spike') {
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y + obs.height);
+                    ctx.lineTo(obs.x + obs.width / 2, obs.y);
+                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    ctx.closePath(); ctx.fill();
+                } else if (obs.type === 'barrier') {
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.fillStyle = '#000';
+                    for (let i = 0; i < 4; i++) ctx.fillRect(obs.x, obs.y + i * 20, obs.width, 8);
+                } else if (obs.type === 'drone') {
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, obs.height / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath(); ctx.arc(obs.x + obs.width / 2, obs.y + obs.height / 2, 5, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function renderParticles() {
+            for (const p of particles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.size), 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ============ 粒子逻辑 ============
+        function createParticle(x, y, type) {
+            let p = { x, y, life: 1, decay: 0.02, size: 3, vx: 0, vy: 0, gravity: 0, color: COLORS.neonCyan };
+            
+            if (type === 'run') {
+                p.vx = -speed * 0.5 + (Math.random() - 0.5) * 2;
+                p.vy = (Math.random() - 0.5) * 2;
+                p.decay = 0.03;
+                p.size = 2 + Math.random() * 3;
+                p.color = (isInvincible) ? COLORS.neonGold : COLORS.neonMagenta;
+            } else if (type === 'jump') {
+                p.vx = (Math.random() - 0.5) * 4;
+                p.vy = Math.random() * 3;
+                p.gravity = 0.1;
+                p.size = 3 + Math.random() * 4;
+                p.color = COLORS.neonMagenta;
+            } else if (type === 'explosion') {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = 3 + Math.random() * 8;
+                p.vx = Math.cos(angle) * spd;
+                p.vy = Math.sin(angle) * spd;
+                p.gravity = 0.05;
+                p.size = 4 + Math.random() * 6;
+                p.color = [COLORS.neonCyan, COLORS.neonMagenta, COLORS.neonOrange][Math.floor(Math.random()*3)];
+            }
+            particles.push(p);
+        }
+
+        function createRunParticles() {
+            createParticle(player.x + Math.random() * 10, player.y + player.height - 5, 'run');
+        }
+
+        function createJumpParticles() {
+            for (let i = 0; i < 8; i++) {
+                createParticle(player.x + player.width / 2 + (Math.random() - 0.5) * 20, player.y + player.height, 'jump');
+            }
+        }
+
+        // ============ 启动 ============
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
