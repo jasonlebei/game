@@ -21,10 +21,6 @@
 [红包雨](https://jasonlebei.github.io/game/跳转.html?url=https://jasonlebei.github.io/game/红包雨/)
 [配对游戏](https://jasonlebei.github.io/game/跳转.html?url=https://jasonlebei.github.io/game/配对游戏/)
 
-[数字华容道](https://jasonlebei.github.io/game/跳转.html?url=https://jasonlebei.github.io/game/数字华容道/)
-[24点](https://jasonlebei.github.io/game/跳转.html?url=https://jasonlebei.github.io/game/24点/)
-
-
 
 [![Release](https://img.shields.io/github/v/release/jasonlebei/game?style=flat-square&logo=github&label=版本&color=blue)](https://github.com/jasonlebei/game/releases)
 
