@@ -1,0 +1,688 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>趣味数学算式配对游戏</title>
+    <style>
+        /* 全局样式重置与基础设置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            min-height: 100vh;
+            color: #fff;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 装饰元素 */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: -1;
+        }
+
+        body::before {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 10%;
+        }
+
+        body::after {
+            width: 150px;
+            height: 150px;
+            bottom: 10%;
+            right: 10%;
+        }
+
+        /* 标题样式 */
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to right, #ffecd2, #fcb69f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* 游戏信息面板 */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .score {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .score i {
+            color: #ffd700;
+        }
+
+        .progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .progress-bar {
+            width: 80px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* 自定义弹窗样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .modal-text {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-score {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .modal-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3a86ff, #2667ff);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 134, 255, 0.4);
+        }
+
+        /* 游戏容器 */
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 5px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            height: 80px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 卡片装饰效果 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 已选中卡片 */
+        .card.selected {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            transform: scale(0.98);
+        }
+
+        /* 已配对卡片 */
+        .card.matched {
+            background: linear-gradient(135deg, #4ecdc4, #45b7a0);
+            color: white;
+            cursor: default;
+            transform: scale(0.95);
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        /* 配对成功动画 */
+        @keyframes pulse {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(0.95); }
+        }
+
+        /* 按钮容器 */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0 20px;
+            width: 100%;
+            max-width: 500px;
+            justify-content: center;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3a86ff, #2667ff);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #8338ec, #6a2cd7);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-info {
+                padding: 10px 15px;
+            }
+            
+            .score, .progress {
+                font-size: 18px;
+            }
+            
+            .card {
+                height: 70px;
+                font-size: 16px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 15px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .modal-icon {
+                font-size: 40px;
+            }
+            
+            .modal-text {
+                font-size: 20px;
+            }
+        }
+
+        /* 横屏适配 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding: 10px;
+            }
+            
+            .game-header {
+                margin-bottom: 10px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .game-info {
+                margin-bottom: 10px;
+            }
+            
+            .card {
+                height: 60px;
+            }
+            
+            .controls {
+                margin: 15px 0 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <h1>趣味数学算式配对游戏</h1>
+    </div>
+    
+    <div class="game-info">
+        <div class="score">
+            <i>⭐</i> 得分: <span id="score">0</span>
+        </div>
+        <div class="progress">
+            进度: 
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressText">0/6</span>
+        </div>
+    </div>
+    
+    <!-- 自定义弹窗 -->
+    <div class="modal" id="messageModal">
+        <div class="modal-content">
+            <span class="modal-icon" id="modalIcon">🎉</span>
+            <div class="modal-text" id="modalText">配对成功！</div>
+            <div class="modal-score" id="modalScore">当前得分：0</div>
+            <button class="modal-btn" id="modalBtn">确定</button>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameContainer"></div>
+    
+    <div class="controls">
+        <button id="restartBtn" class="btn btn-primary">重新开始</button>
+        <button id="newGameBtn" class="btn btn-secondary">新游戏</button>
+    </div>
+
+    <script>
+        // 游戏核心变量
+        let score = 0;
+        let selectedCards = [];
+        let matchedPairs = 0;
+        const totalPairs = 6; // 总配对数
+        let gameData = [];
+        let modalTimer = null; // 弹窗定时器
+
+        // DOM元素
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const restartBtn = document.getElementById('restartBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        // 弹窗元素
+        const messageModal = document.getElementById('messageModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalText = document.getElementById('modalText');
+        const modalScore = document.getElementById('modalScore');
+        const modalBtn = document.getElementById('modalBtn');
+
+        // 更新进度显示
+        function updateProgress() {
+            const progressPercent = (matchedPairs / totalPairs) * 100;
+            progressFill.style.width = `${progressPercent}%`;
+            progressText.textContent = `${matchedPairs}/${totalPairs}`;
+        }
+
+        // 显示自定义弹窗
+        function showModal(type, text, canClose = true) {
+            // 清除之前的定时器
+            if (modalTimer) clearTimeout(modalTimer);
+            
+            // 设置弹窗内容
+            if (type === 'success') {
+                modalIcon.textContent = '🎉';
+                modalText.style.color = '#4ecdc4';
+            } else if (type === 'error') {
+                modalIcon.textContent = '😞';
+                modalText.style.color = '#ff6b6b';
+            } else if (type === 'complete') {
+                modalIcon.textContent = '🏆';
+                modalText.style.color = '#ffd700';
+            }
+            
+            modalText.textContent = text;
+            modalScore.textContent = `当前得分：${score}`;
+            
+            // 控制关闭按钮显示/隐藏
+            if (canClose) {
+                modalBtn.style.display = 'block';
+            } else {
+                modalBtn.style.display = 'none';
+            }
+            
+            // 显示弹窗
+            messageModal.classList.add('show');
+            
+            // 错误弹窗自动关闭（1.5秒）
+            if (!canClose) {
+                modalTimer = setTimeout(() => {
+                    hideModal();
+                }, 1500);
+            }
+        }
+
+        // 隐藏自定义弹窗
+        function hideModal() {
+            messageModal.classList.remove('show');
+            // 清除定时器
+            if (modalTimer) clearTimeout(modalTimer);
+        }
+
+        // 生成随机算式和结果
+        function generateMathProblems() {
+            const problems = [];
+            // 生成6组加减法算式（10以内）
+            for (let i = 0; i < totalPairs; i++) {
+                let num1, num2, operator, result;
+                
+                // 随机选择加法或减法
+                if (Math.random() > 0.5) {
+                    // 加法
+                    num1 = Math.floor(Math.random() * 9) + 1;
+                    num2 = Math.floor(Math.random() * 9) + 1;
+                    operator = '+';
+                    result = num1 + num2;
+                } else {
+                    // 减法（确保结果为正）
+                    num1 = Math.floor(Math.random() * 9) + 2;
+                    num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+                    operator = '-';
+                    result = num1 - num2;
+                }
+
+                // 添加算式和结果到数组
+                problems.push({
+                    type: 'equation',
+                    content: `${num1} ${operator} ${num2} = ?`,
+                    value: result
+                });
+                problems.push({
+                    type: 'answer',
+                    content: result,
+                    value: result
+                });
+            }
+            
+            // 随机打乱数组
+            return shuffleArray(problems);
+        }
+
+        // 数组洗牌函数（Fisher-Yates算法）
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // 初始化游戏
+        function initGame() {
+            // 重置游戏状态
+            score = 0;
+            selectedCards = [];
+            matchedPairs = 0;
+            scoreElement.textContent = score;
+            updateProgress();
+            
+            // 隐藏弹窗
+            hideModal();
+            
+            // 生成新题目
+            gameData = generateMathProblems();
+            
+            // 清空游戏容器
+            gameContainer.innerHTML = '';
+            
+            // 创建卡片
+            gameData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.value = item.value;
+                card.dataset.type = item.type;
+                card.textContent = item.content;
+                
+                // 卡片点击事件（移动端优化）
+                card.addEventListener('click', handleCardClick);
+                // 移动端触摸事件支持
+                card.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleCardClick(e);
+                });
+                
+                gameContainer.appendChild(card);
+            });
+        }
+
+        // 处理卡片点击
+        function handleCardClick(e) {
+            const card = e.target;
+            
+            // 跳过已配对或已选中的卡片，弹窗显示时也不能点击
+            if (card.classList.contains('matched') || 
+                card.classList.contains('selected') ||
+                messageModal.classList.contains('show')) {
+                return;
+            }
+
+            // 最多同时选中2张卡片
+            if (selectedCards.length >= 2) {
+                return;
+            }
+
+            // 选中卡片
+            card.classList.add('selected');
+            selectedCards.push(card);
+
+            // 选中2张卡片时检查配对
+            if (selectedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        // 检查配对是否正确
+        function checkMatch() {
+            const card1 = selectedCards[0];
+            const card2 = selectedCards[1];
+            
+            // 判断条件：值相等 + 类型不同（一个是算式，一个是结果）
+            const isMatched = (card1.dataset.value === card2.dataset.value) && 
+                              (card1.dataset.type !== card2.dataset.type);
+
+            if (isMatched) {
+                // 配对成功
+                score += 10;
+                matchedPairs++;
+                scoreElement.textContent = score;
+                
+                // 标记为已配对
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                
+                // 移除选中状态
+                card1.classList.remove('selected');
+                card2.classList.remove('selected');
+                
+                // 清空选中数组
+                selectedCards = [];
+                
+                // 更新进度
+                updateProgress();
+                
+                // 检查游戏是否结束
+                if (matchedPairs === totalPairs) {
+                    // 游戏完成弹窗（需要用户关闭）
+                    setTimeout(() => {
+                        showModal('complete', `恭喜你！全部配对完成！总得分：${score}`, true);
+                    }, 500);
+                } else {
+                    // 配对成功弹窗（需要用户关闭）
+                    showModal('success', '配对成功！', true);
+                }
+            } else {
+                // 配对失败
+                score = Math.max(0, score - 2); // 扣分（不低于0）
+                scoreElement.textContent = score;
+                
+                // 失败弹窗（自动关闭，不可手动关闭）
+                showModal('error', '配对失败！', false);
+                
+                // 1秒后取消选中状态
+                setTimeout(() => {
+                    card1.classList.remove('selected');
+                    card2.classList.remove('selected');
+                    selectedCards = [];
+                }, 1000);
+            }
+        }
+
+        // 事件监听
+        restartBtn.addEventListener('click', () => {
+            // 重新开始（保留当前题目，重置状态）
+            score = 0;
+            selectedCards = [];
+            matchedPairs = 0;
+            scoreElement.textContent = score;
+            updateProgress();
+            
+            // 隐藏弹窗
+            hideModal();
+            
+            // 重置卡片样式
+            const allCards = document.querySelectorAll('.card');
+            allCards.forEach(card => {
+                card.classList.remove('selected', 'matched');
+            });
+        });
+
+        newGameBtn.addEventListener('click', initGame);
+
+        // 弹窗按钮点击事件
+        modalBtn.addEventListener('click', hideModal);
+
+        // 初始化游戏
+        window.addEventListener('load', initGame);
+
+        // 防止移动端双击缩放
+        document.addEventListener('dblclick', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
