@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>福倒了 - 新春互动特效（长按版）</title>
+    <style>
+        /* ==================== 全局样式重置 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ==================== 页面基础样式 ==================== */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #fdf2e9 0%, #f8e8d8 50%, #f5d7b8 100%);
+            font-family: "Ma Shan Zheng", "微软雅黑", "SimHei", sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ==================== 背景装饰元素 ==================== */
+        .bg-decoration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-decoration__pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0V0zm2 2v16h16V2H2z' fill='%23d43d3d' fill-opacity='0.05'/%3E%3Cpath d='M3 3h2v2H3V3zm4 0h2v2H7V3zm4 0h2v2h-2V3zm4 0h2v2h-2V3zM3 7h2v2H3V7zm4 0h2v2H7V7zm4 0h2v2h-2V7zm4 0h2v2h-2V7zM3 11h2v2H3v-2zm4 0h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM3 15h2v2H3v-2zm4 0h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z' fill='%23d43d3d' fill-opacity='0.1'/%3E%3C/svg%3E");
+            opacity: 0.6;
+        }
+
+        .bg-decoration__red-packet {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(45deg, #d43d3d 0%, #b92b2b 100%);
+            border-radius: 8px;
+            top: -100px;
+            animation: floatRedPacket 15s linear infinite;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .bg-decoration__red-packet::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 10px;
+            background: #fff;
+            border-radius: 2px;
+        }
+
+        .bg-decoration__red-packet::after {
+            content: '福';
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .bg-decoration__red-packet:nth-child(2) {
+            left: 10%;
+            animation-delay: 2s;
+            animation-duration: 18s;
+            width: 50px;
+            height: 70px;
+        }
+
+        .bg-decoration__red-packet:nth-child(3) {
+            left: 25%;
+            animation-delay: 5s;
+            animation-duration: 16s;
+            width: 55px;
+            height: 75px;
+        }
+
+        .bg-decoration__red-packet:nth-child(4) {
+            left: 60%;
+            animation-delay: 1s;
+            animation-duration: 17s;
+            width: 45px;
+            height: 65px;
+        }
+
+        .bg-decoration__red-packet:nth-child(5) {
+            left: 80%;
+            animation-delay: 7s;
+            animation-duration: 19s;
+            width: 58px;
+            height: 78px;
+        }
+
+        /* ==================== 顶部标题样式 ==================== */
+        .page-title {
+            font-size: clamp(24px, 8vw, 48px);
+            color: #d43d3d;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 1;
+            animation: titleFloat 3s ease-in-out infinite alternate;
+        }
+
+        .page-title::after {
+            content: '';
+            display: block;
+            width: 80%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #d43d3d, transparent);
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        /* ==================== 提示文字样式 ==================== */
+        .tip-container {
+            position: relative;
+            margin-bottom: 40px;
+            z-index: 1;
+        }
+
+        .tip {
+            font-size: clamp(18px, 6vw, 32px);
+            color: #d43d3d;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            box-shadow: 0 6px 12px rgba(212, 61, 61, 0.2);
+            position: relative;
+            animation: tipScale 0.5s ease-out;
+        }
+
+        .tip::before {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 10px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .tip__sub {
+            font-size: clamp(12px, 3vw, 16px);
+            color: #882626;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        /* ==================== 长按倒计时样式 ==================== */
+        .hold-timer {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 30px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d43d3d;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(212,61,61,0.2);
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hold-timer.show {
+            opacity: 1;
+        }
+
+        .timer-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ffdf00, #d43d3d);
+            border-radius: 0 0 0 15px;
+            transition: width 0.1s linear;
+            width: 0%;
+        }
+
+        /* ==================== 福字容器样式 ==================== */
+        .fu-wrapper {
+            position: relative;
+            z-index: 2;
+            /* 固定福字容器位置，防止偏移 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fu-container {
+            width: clamp(120px, 50vw, 250px);
+            height: clamp(120px, 50vw, 250px);
+            cursor: pointer; /* 改为点击光标，移除拖动光标 */
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative; /* 移除absolute，保留relative */
+            transform-origin: center center;
+            box-shadow: 0 8px 24px rgba(212, 61, 61, 0.25);
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ffeeee, #f8e0e0);
+            padding: 8px;
+            /* 确保福字始终居中 */
+            margin: 0 auto;
+        }
+
+        .fu-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: linear-gradient(45deg, rgba(255,255,255,0.4), rgba(255,255,255,0));
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .fu-container::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            border: 2px dashed rgba(212, 61, 61, 0.3);
+            z-index: 0;
+            animation: borderRotate 8s linear infinite;
+            pointer-events: none;
+        }
+
+        /* ==================== 福字核心样式 ==================== */
+        .fu {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #d43d3d 0%, #b92b2b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: clamp(48px, 20vw, 100px);
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            box-shadow: inset 0 4px 8px rgba(255,255,255,0.2),
+                        inset 0 -4px 8px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .fu::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent);
+            z-index: -1;
+        }
+
+        /* ==================== 粒子特效容器 ==================== */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffdf00;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 3s ease-out forwards;
+        }
+
+        /* ==================== 旋转状态样式 ==================== */
+        .rotate-180 {
+            transform: rotate(180deg);
+            box-shadow: 0 8px 24px rgba(185, 43, 43, 0.35);
+        }
+
+        .rotate-180 .fu {
+            background: linear-gradient(135deg, #b92b2b 0%, #d43d3d 100%);
+        }
+
+        /* ==================== 底部祝福语样式 ==================== */
+        .blessing {
+            margin-top: 50px;
+            text-align: center;
+            color: #882626;
+            font-size: clamp(14px, 4vw, 18px);
+            line-height: 1.8;
+            z-index: 1;
+            position: relative;
+            opacity: 0.8;
+            animation: blessingFadeIn 2s ease-out 1s forwards;
+            opacity: 0;
+        }
+
+        .blessing__title {
+            font-size: clamp(16px, 5vw, 22px);
+            margin-bottom: 10px;
+            color: #d43d3d;
+            font-weight: bold;
+        }
+
+        /* ==================== 按钮样式 ==================== */
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: linear-gradient(45deg, #d43d3d, #b92b2b);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-family: inherit;
+            font-size: clamp(14px, 4vw, 16px);
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(212, 61, 61, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1;
+            position: relative;
+            display: none;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(212, 61, 61, 0.3);
+        }
+
+        .reset-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(212, 61, 61, 0.2);
+        }
+
+        /* ==================== 动画定义 ==================== */
+        @keyframes titleFloat {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        @keyframes tipScale {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes floatRedPacket {
+            0% { 
+                transform: translateY(-100px) rotate(0deg); 
+                opacity: 0;
+            }
+            10% { 
+                opacity: 1;
+            }
+            90% { 
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(110vh) rotate(360deg); 
+                opacity: 0;
+            }
+        }
+
+        @keyframes borderRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes particleFloat {
+            0% { 
+                transform: translate(0, 0); 
+                opacity: 1;
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) rotate(720deg); 
+                opacity: 0;
+            }
+        }
+
+        @keyframes blessingFadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 0.8; transform: translateY(0); }
+        }
+
+        /* ==================== 响应式优化 ==================== */
+        @media (max-width: 480px) {
+            .page-title {
+                letter-spacing: 2px;
+                margin-bottom: 15px;
+            }
+
+            .tip-container {
+                margin-bottom: 30px;
+            }
+
+            .blessing {
+                margin-top: 40px;
+                padding: 0 10px;
+            }
+
+            .reset-btn {
+                padding: 8px 20px;
+            }
+
+            .hold-timer {
+                width: 70px;
+                height: 28px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .fu-container {
+                cursor: pointer; /* 改为点击光标 */
+            }
+            
+            .fu-container:active {
+                cursor: pointer; /* 保持点击光标 */
+            }
+        }
+
+        /* ==================== 加载动画（预加载） ==================== */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fdf2e9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loader__spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(212, 61, 61, 0.2);
+            border-top: 5px solid #d43d3d;
+            border-radius: 50%;
+            animation: spinner 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loader__text {
+            color: #d43d3d;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <!-- 引入免费书法字体 -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loader" id="loader">
+        <div class="loader__spinner"></div>
+        <div class="loader__text">福运加载中...</div>
+    </div>
+
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+        <div class="bg-decoration__pattern"></div>
+        <div class="bg-decoration__red-packet"></div>
+        <div class="bg-decoration__red-packet"></div>
+        <div class="bg-decoration__red-packet"></div>
+        <div class="bg-decoration__red-packet"></div>
+        <div class="bg-decoration__red-packet"></div>
+    </div>
+
+    <!-- 顶部标题 -->
+    <h1 class="page-title">新春纳福</h1>
+
+    <!-- 提示文字容器 -->
+    <div class="tip-container">
+        <div class="tip" id="tip">
+            福倒（到）了！
+            <div class="tip__sub">新年行大运，万事皆顺遂</div>
+        </div>
+    </div>
+
+    <!-- 福字外层容器 -->
+    <div class="fu-wrapper">
+        <!-- 长按倒计时提示 -->
+        <div class="hold-timer" id="holdTimer">
+            <span id="timerText">3s</span>
+            <div class="timer-progress" id="timerProgress"></div>
+        </div>
+        
+        <!-- 粒子特效容器 -->
+        <div class="particles" id="particles"></div>
+        
+        <!-- 福字容器 -->
+        <div class="fu-container" id="fuContainer">
+            <div class="fu">福</div>
+        </div>
+    </div>
+
+    <!-- 底部祝福语 -->
+    <div class="blessing">
+        <div class="blessing__title">新春祝福</div>
+        <div>愿您新的一年：福气满满，好运连连</div>
+        <div>阖家欢乐，万事如意</div>
+    </div>
+
+    <!-- 重置按钮 -->
+    <button class="reset-btn" id="resetBtn">重置福字</button>
+
+    <!-- 音效元素 -->
+    <audio id="dragSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="rotateSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="countdownSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-countdown-beeps-926.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // ==================== 全局变量定义 ====================
+        const fuContainer = document.getElementById('fuContainer');
+        const tip = document.getElementById('tip');
+        const particles = document.getElementById('particles');
+        const resetBtn = document.getElementById('resetBtn');
+        const loader = document.getElementById('loader');
+        const holdTimer = document.getElementById('holdTimer');
+        const timerText = document.getElementById('timerText');
+        const timerProgress = document.getElementById('timerProgress');
+        const dragSound = document.getElementById('dragSound');
+        const rotateSound = document.getElementById('rotateSound');
+        const countdownSound = document.getElementById('countdownSound');
+        
+        let isRotated = false;
+        let isHolding = false;       // 是否正在长按
+        let holdStartTime = 0;       // 长按开始时间
+        let holdTimerInterval = null;// 倒计时定时器
+        let remainingTime = 3;       // 剩余长按时间（秒）
+        let particleCount = 0;
+
+        // ==================== 工具函数 ====================
+        /**
+         * 播放音效（兼容移动端）
+         * @param {HTMLAudioElement} audioElement - 音频元素
+         */
+        function playSound(audioElement) {
+            try {
+                audioElement.currentTime = 0;
+                audioElement.play().catch(err => {
+                    console.log('音效播放失败:', err);
+                });
+            } catch (err) {
+                console.log('音效播放异常:', err);
+            }
+        }
+
+        /**
+         * 创建粒子特效
+         * @param {number} x - 粒子起始X坐标
+         * @param {number} y - 粒子起始Y坐标
+         */
+        function createParticles(x, y) {
+            if (particleCount > 30) return;
+            
+            const particleNum = 15;
+            
+            for (let i = 0; i < particleNum; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                const size = Math.random() * 6 + 4;
+                const color = ['#ffdf00', '#ff6b6b', '#ff8e8e', '#fff'][Math.floor(Math.random() * 4)];
+                const tx = (Math.random() - 0.5) * 100;
+                const ty = (Math.random() - 0.5) * 100;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.background = color;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                particle.style.animationDelay = `${i * 0.05}s`;
+                
+                particles.appendChild(particle);
+                particleCount++;
+                
+                setTimeout(() => {
+                    particle.remove();
+                    particleCount--;
+                }, 3000);
+            }
+        }
+
+        /**
+         * 初始化页面加载动画
+         */
+        function initLoader() {
+            setTimeout(() => {
+                loader.style.opacity = 0;
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500);
+            }, 1500);
+        }
+
+        /**
+         * 重置长按计时器
+         */
+        function resetHoldTimer() {
+            // 清除定时器
+            if (holdTimerInterval) {
+                clearInterval(holdTimerInterval);
+                holdTimerInterval = null;
+            }
+            
+            // 重置状态
+            isHolding = false;
+            remainingTime = 3;
+            holdStartTime = 0;
+            
+            // 隐藏倒计时提示
+            holdTimer.classList.remove('show');
+            timerText.textContent = '3s';
+            timerProgress.style.width = '0%';
+        }
+
+        /**
+         * 开始长按倒计时
+         */
+        function startHoldTimer() {
+            // 显示倒计时提示框
+            holdTimer.classList.add('show');
+            isHolding = true;
+            holdStartTime = Date.now();
+            
+            // 播放倒计时音效
+            playSound(countdownSound);
+            
+            // 更新倒计时UI
+            holdTimerInterval = setInterval(() => {
+                // 计算已按住时间（秒）
+                const holdDuration = (Date.now() - holdStartTime) / 1000;
+                const elapsedTime = Math.min(holdDuration, 3);
+                remainingTime = 3 - Math.floor(elapsedTime);
+                
+                // 更新倒计时文字和进度条
+                timerText.textContent = `${remainingTime}s`;
+                timerProgress.style.width = `${(elapsedTime / 3) * 100}%`;
+                
+                // 长按满3秒，触发福倒了效果
+                if (elapsedTime >= 3) {
+                    triggerFuRotate();
+                    resetHoldTimer();
+                }
+            }, 100);
+        }
+
+        /**
+         * 触发福字旋转效果
+         */
+        function triggerFuRotate() {
+            if (isRotated) return;
+            
+            // 显示提示文字
+            tip.style.display = 'block';
+            
+            // 播放旋转音效
+            playSound(rotateSound);
+            
+            // 创建粒子特效（基于福字中心）
+            const rect = fuContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            createParticles(centerX, centerY);
+            
+            // 添加旋转类
+            fuContainer.classList.add('rotate-180');
+            isRotated = true;
+            
+            // 显示重置按钮
+            resetBtn.style.display = 'block';
+            
+            // 3秒后隐藏提示文字
+            setTimeout(() => {
+                tip.style.display = 'none';
+            }, 3000);
+        }
+
+        // ==================== 核心交互逻辑 ====================
+        /**
+         * 开始按住（兼容鼠标/触摸）
+         * @param {Event} e - 事件对象
+         */
+        function startHold(e) {
+            if (isRotated || isHolding) return;
+            
+            // 阻止默认行为，防止页面滚动/缩放
+            e.preventDefault();
+            
+            // 播放按住音效
+            playSound(dragSound);
+
+            // 开始长按倒计时
+            startHoldTimer();
+
+            // 绑定结束事件（移除移动事件绑定）
+            document.addEventListener('mouseup', endHold);
+            document.addEventListener('touchend', endHold);
+            document.addEventListener('mouseleave', endHold); // 鼠标离开也结束长按
+            document.addEventListener('touchcancel', endHold); // 触摸被中断也结束
+        }
+
+        /**
+         * 结束按住（兼容鼠标/触摸）
+         */
+        function endHold() {
+            if (!isHolding) return;
+            
+            // 重置长按计时器
+            resetHoldTimer();
+
+            // 解绑事件
+            document.removeEventListener('mouseup', endHold);
+            document.removeEventListener('touchend', endHold);
+            document.removeEventListener('mouseleave', endHold);
+            document.removeEventListener('touchcancel', endHold);
+        }
+
+        /**
+         * 重置福字状态
+         */
+        function resetFu() {
+            // 移除旋转类
+            fuContainer.classList.remove('rotate-180');
+            
+            // 重置状态标记
+            isRotated = false;
+            
+            // 隐藏重置按钮和提示
+            resetBtn.style.display = 'none';
+            tip.style.display = 'none';
+            
+            // 重置长按计时器
+            resetHoldTimer();
+            
+            // 播放重置音效
+            playSound(dragSound);
+        }
+
+        // ==================== 事件绑定 ====================
+        /**
+         * 初始化所有事件监听
+         */
+        function initEvents() {
+            // 绑定按住开始事件（仅绑定down/start，移除move）
+            fuContainer.addEventListener('mousedown', startHold);
+            fuContainer.addEventListener('touchstart', startHold);
+            
+            // 绑定重置按钮事件
+            resetBtn.addEventListener('click', resetFu);
+            resetBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                resetFu();
+            });
+            
+            // 防止页面滚动
+            document.addEventListener('touchmove', (e) => {
+                if (isHolding) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        // ==================== 页面初始化 ====================
+        /**
+         * 页面加载完成后的初始化
+         */
+        function initPage() {
+            initLoader();
+            initEvents();
+            
+            // 预加载音效
+            dragSound.load();
+            rotateSound.load();
+            countdownSound.load();
+            
+            console.log('福倒了互动特效（长按版）初始化完成！');
+        }
+
+        // 页面加载完成后执行初始化
+        window.addEventListener('DOMContentLoaded', initPage);
+
+        // ==================== 额外的性能优化代码 ====================
+        function throttle(fn, delay) {
+            let timer = null;
+            return function(...args) {
+                if (!timer) {
+                    timer = setTimeout(() => {
+                        fn.apply(this, args);
+                        timer = null;
+                    }, delay);
+                }
+            };
+        }
+
+        const throttledCreateParticles = throttle(createParticles, 50);
+
+        window.addEventListener('resize', () => {
+            // 窗口大小变化时，确保福字始终居中
+            if (!isRotated) {
+                fuContainer.style.position = '';
+                fuContainer.style.left = '';
+                fuContainer.style.top = '';
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                document.querySelectorAll('.particle').forEach(p => {
+                    p.style.animationPlayState = 'paused';
+                });
+                document.querySelectorAll('.bg-decoration__red-packet').forEach(p => {
+                    p.style.animationPlayState = 'paused';
+                });
+                // 页面隐藏时重置长按
+                resetHoldTimer();
+            } else {
+                document.querySelectorAll('.particle').forEach(p => {
+                    p.style.animationPlayState = 'running';
+                });
+                document.querySelectorAll('.bg-decoration__red-packet').forEach(p => {
+                    p.style.animationPlayState = 'running';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
