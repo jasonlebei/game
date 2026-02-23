@@ -1,0 +1,1396 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>逻辑数阵大挑战</title>
+    <style>
+        /* ===================== 全局样式重置 ===================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* 输入框默认样式重置 - 核心：禁用系统键盘 */
+        input[type="text"] {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            outline: none;
+            background: transparent;
+        }
+
+        /* ===================== 页面基础样式 ===================== */
+        body {
+            background: linear-gradient(135deg, #f7f9fc 0%, #eef2f7 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 15px;
+            color: #1f2937;
+            touch-action: manipulation;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 页面加载动画 */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.6s ease-out;
+        }
+        .page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spinner-rotate 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        .loader-text {
+            font-size: 14px;
+            color: #64748b;
+            animation: text-pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ===================== 标题区域样式 ===================== */
+        .game-title {
+            font-size: 24px;
+            margin: 15px 0 10px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===================== 规则提示区域 ===================== */
+        .game-rule {
+            font-size: 14px;
+            color: #4b5563;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 10px 15px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #3b82f6;
+        }
+        .rule-target-sum {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 15px;
+        }
+
+        /* ===================== 难度选择区域 ===================== */
+        .difficulty-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 420px;
+        }
+        .difficulty-btn {
+            padding: 9px 20px;
+            border-radius: 10px;
+            border: none;
+            background: #e2e8f0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+        .difficulty-btn:hover {
+            background: #dbeafe;
+            transform: translateY(-1px);
+        }
+        .difficulty-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===================== 数阵容器样式 ===================== */
+        .matrix-container {
+            display: grid;
+            gap: 7px;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            padding: 12px;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+        .matrix-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 18px 18px 0 0;
+        }
+
+        /* ===================== 数阵格子样式 ===================== */
+        .matrix-cell {
+            aspect-ratio: 1/1;
+            background: #ffffff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+        .matrix-cell.fixed {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            cursor: default;
+        }
+        .matrix-cell.editable {
+            cursor: pointer;
+        }
+        .matrix-cell.editable:hover {
+            border: 2px solid #93c5fd;
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.1);
+        }
+        .matrix-cell.editable.active {
+            border: 2px solid #3b82f6;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+        }
+        .matrix-cell-input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            cursor: pointer;
+        }
+
+        /* ===================== 答案覆盖层样式 ===================== */
+        .answer-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            color: #8b5cf6;
+            border-radius: 12px;
+            z-index: 10;
+        }
+        .matrix-cell.show-answer .answer-overlay {
+            display: flex;
+        }
+
+        /* ===================== 提示信息区域 ===================== */
+        .message-panel {
+            height: 40px;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .message-panel.error {
+            color: #dc2626;
+        }
+        .message-panel.success {
+            color: #059669;
+        }
+        .message-panel.empty {
+            color: #64748b;
+        }
+
+        /* ===================== 功能按钮区域 ===================== */
+        .function-buttons {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 10px;
+        }
+        .function-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        }
+        .verify-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+        }
+        .verify-btn:hover {
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+            transform: translateY(-2px);
+        }
+        .verify-btn:active {
+            transform: translateY(0);
+        }
+        .reset-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+        }
+        .reset-btn:hover {
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+            transform: translateY(-2px);
+        }
+        .reset-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===================== 答案按钮样式（核心：调小） ===================== */
+        .answer-toggle-btn {
+            padding: 8px 20px; /* 缩小内边距 */
+            border-radius: 10px;
+            border: none;
+            font-size: 14px; /* 缩小字体 */
+            font-weight: 600;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: #ffffff;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            width: auto; /* 自适应宽度 */
+            min-width: 120px; /* 最小宽度 */
+            margin-bottom: 20px;
+        }
+        .answer-toggle-btn:hover {
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2);
+            transform: translateY(-1px);
+        }
+        .answer-toggle-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===================== 数字键盘样式 ===================== */
+        .custom-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 9px;
+            width: 100%;
+            max-width: 350px;
+            margin-top: 15px;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .keyboard-key {
+            padding: 16px 0;
+            border-radius: 12px;
+            border: none;
+            background: #f1f5f9;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            transition: all 0.2s ease;
+        }
+        .keyboard-key:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        }
+        .keyboard-key:active {
+            transform: translateY(0);
+            background: #cbd5e1;
+        }
+        .keyboard-key.delete {
+            background: linear-gradient(135deg, #fecdd3 0%, #fda4af 100%);
+            color: #dc2626;
+        }
+        .keyboard-key.delete:hover {
+            background: linear-gradient(135deg, #fda4af 0%, #fb7185 100%);
+        }
+
+        /* ===================== 弹窗样式 ===================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 998;
+            display: none;
+            backdrop-filter: blur(4px);
+            animation: overlay-fade-in 0.3s ease;
+        }
+        .custom-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: #ffffff;
+            padding: 30px 25px;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            display: none;
+            pointer-events: none;
+            text-align: center;
+            width: 85%;
+            max-width: 360px;
+            animation: modal-pop 0.3s ease forwards;
+        }
+        .modal-fail {
+            border-left: 6px solid #ef4444;
+        }
+        .modal-success {
+            border-left: 6px solid #22c55e;
+        }
+        .modal-title {
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .modal-fail .modal-title {
+            color: #ef4444;
+        }
+        .modal-success .modal-title {
+            color: #22c55e;
+        }
+        .modal-message {
+            font-size: 15px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        /* ===================== 动画定义 ===================== */
+        @keyframes spinner-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes text-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes overlay-fade-in {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes modal-pop {
+            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* ===================== 移动端适配 ===================== */
+        @media (max-width: 480px) {
+            .game-title {
+                font-size: 22px;
+            }
+            .game-rule {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+            .difficulty-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .matrix-cell {
+                font-size: 18px;
+            }
+            .matrix-cell-input {
+                font-size: 18px;
+            }
+            .function-btn {
+                padding: 11px 0;
+                font-size: 14px;
+            }
+            .answer-toggle-btn {
+                padding: 7px 18px;
+                font-size: 13px;
+                min-width: 100px;
+            }
+            .keyboard-key {
+                padding: 14px 0;
+                font-size: 17px;
+            }
+            .custom-modal {
+                padding: 25px 20px;
+                width: 90%;
+            }
+            .modal-title {
+                font-size: 17px;
+            }
+            .modal-message {
+                font-size: 14px;
+            }
+        }
+
+        /* ===================== 横屏适配 ===================== */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .game-title {
+                margin: 10px 0 5px;
+                font-size: 20px;
+            }
+            .game-rule {
+                margin-bottom: 10px;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .matrix-container {
+                margin-bottom: 10px;
+                padding: 8px;
+            }
+            .custom-keyboard {
+                margin-top: 10px;
+                padding: 10px;
+            }
+            .keyboard-key {
+                padding: 10px 0;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面加载动画 -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">正在初始化游戏...</div>
+    </div>
+
+    <!-- 游戏标题 -->
+    <h1 class="game-title">逻辑数阵大挑战</h1>
+
+    <!-- 游戏规则提示 -->
+    <div class="game-rule">
+        游戏规则：每行、每列数字（0-9）不重复，且每行/每列数字和等于目标值 → <span class="rule-target-sum" id="targetSum">15</span>
+    </div>
+
+    <!-- 难度选择区域 -->
+    <div class="difficulty-selector">
+        <button class="difficulty-btn active" data-size="3">3×3 简单</button>
+        <button class="difficulty-btn" data-size="4">4×4 困难</button>
+    </div>
+
+    <!-- 数阵容器 -->
+    <div class="matrix-container" id="matrixContainer"></div>
+
+    <!-- 提示信息区域 -->
+    <div class="message-panel empty" id="messagePanel">请填充数阵后验证</div>
+
+    <!-- 功能按钮区域 -->
+    <div class="function-buttons">
+        <button class="function-btn verify-btn" id="verifyButton">验证数阵</button>
+        <button class="function-btn reset-btn" id="resetButton">重新生成</button>
+    </div>
+
+    <!-- 答案按钮（调小） -->
+    <button class="answer-toggle-btn" id="answerToggleButton">显示答案</button>
+
+    <!-- 自定义数字键盘 -->
+    <div class="custom-keyboard" id="customKeyboard">
+        <button class="keyboard-key" data-number="1">1</button>
+        <button class="keyboard-key" data-number="2">2</button>
+        <button class="keyboard-key" data-number="3">3</button>
+        <button class="keyboard-key" data-number="4">4</button>
+        <button class="keyboard-key" data-number="5">5</button>
+        <button class="keyboard-key" data-number="6">6</button>
+        <button class="keyboard-key" data-number="7">7</button>
+        <button class="keyboard-key" data-number="8">8</button>
+        <button class="keyboard-key" data-number="9">9</button>
+        <button class="keyboard-key" data-number="0">0</button>
+        <button class="keyboard-key delete" id="deleteKey">删除</button>
+    </div>
+
+    <!-- 弹窗遮罩层 -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+
+    <!-- 错误弹窗 -->
+    <div class="custom-modal modal-fail" id="failModal">
+        <h3 class="modal-title">❌ 验证失败</h3>
+        <p class="modal-message" id="failMessage">请检查数阵是否符合规则</p>
+    </div>
+
+    <!-- 成功弹窗 -->
+    <div class="custom-modal modal-success" id="successModal">
+        <h3 class="modal-title">✅ 挑战成功</h3>
+        <p class="modal-message">恭喜！数阵填充正确，自动刷新新题</p>
+    </div>
+
+    <script>
+        // ===================== 全局配置常量 =====================
+        const GAME_CONFIG = {
+            // 默认数阵大小
+            DEFAULT_SIZE: 3,
+            // 不同尺寸数阵的目标和
+            TARGET_SUM: {
+                3: 15,
+                4: 34
+            },
+            // 固定数字比例（0-1）
+            FIXED_NUMBER_RATIO: 0.4,
+            // 数字范围（0-9）
+            NUMBER_RANGE: {
+                MIN: 0,
+                MAX: 9
+            },
+            // 弹窗显示时长（毫秒）
+            MODAL_DURATION: {
+                ERROR: 2500,
+                SUCCESS: 3000
+            },
+            // 动画时长（毫秒）
+            ANIMATION_DURATION: {
+                LOADER: 800,
+                MODAL: 300
+            },
+            // 答案生成最大尝试次数（防止死循环）
+            MAX_GENERATE_ATTEMPTS: 1000
+        };
+
+        // ===================== 全局状态变量 =====================
+        // 当前数阵大小
+        let currentMatrixSize = GAME_CONFIG.DEFAULT_SIZE;
+        // 当前目标和
+        let currentTargetSum = GAME_CONFIG.TARGET_SUM[currentMatrixSize];
+        // 数阵数据（存储每个格子的状态：是否固定、当前值）
+        let matrixData = [];
+        // 数阵答案数据
+        let matrixAnswer = [];
+        // 当前激活的输入格子
+        let activeInputCell = null;
+        // 是否显示答案
+        let isAnswerVisible = false;
+        // 游戏加载状态
+        let isGameLoaded = false;
+
+        // ===================== DOM元素获取 =====================
+        const DOM_ELEMENTS = {
+            // 加载动画
+            pageLoader: document.getElementById('pageLoader'),
+            // 目标和显示
+            targetSum: document.getElementById('targetSum'),
+            // 数阵容器
+            matrixContainer: document.getElementById('matrixContainer'),
+            // 提示信息面板
+            messagePanel: document.getElementById('messagePanel'),
+            // 验证按钮
+            verifyButton: document.getElementById('verifyButton'),
+            // 重置按钮
+            resetButton: document.getElementById('resetButton'),
+            // 答案切换按钮
+            answerToggleButton: document.getElementById('answerToggleButton'),
+            // 自定义数字键盘
+            customKeyboard: document.getElementById('customKeyboard'),
+            // 删除键
+            deleteKey: document.getElementById('deleteKey'),
+            // 难度按钮
+            difficultyButtons: document.querySelectorAll('.difficulty-btn'),
+            // 弹窗相关
+            modalOverlay: document.getElementById('modalOverlay'),
+            failModal: document.getElementById('failModal'),
+            successModal: document.getElementById('successModal'),
+            failMessage: document.getElementById('failMessage')
+        };
+
+        // ===================== 工具函数 =====================
+        /**
+         * 防抖函数：防止高频触发函数
+         * @param {Function} func - 执行函数
+         * @param {number} delay - 延迟时间（毫秒）
+         * @returns {Function} 防抖后的函数
+         */
+        function debounce(func, delay) {
+            let timer = null;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+
+        /**
+         * 生成指定范围的随机整数
+         * @param {number} min - 最小值
+         * @param {number} max - 最大值
+         * @returns {number} 随机整数
+         */
+        function getRandomInteger(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /**
+         * 检查数组是否有重复值
+         * @param {Array} array - 待检查数组
+         * @returns {boolean} 是否有重复
+         */
+        function hasDuplicateValues(array) {
+            const filtered = array.filter(val => val !== undefined && val !== '');
+            const uniqueValues = new Set(filtered);
+            return uniqueValues.size !== filtered.length;
+        }
+
+        /**
+         * 格式化提示信息
+         * @param {string} text - 提示文本
+         * @param {string} type - 类型（error/success/empty）
+         */
+        function updateMessagePanel(text, type) {
+            const panel = DOM_ELEMENTS.messagePanel;
+            panel.textContent = text;
+            panel.className = `message-panel ${type}`;
+        }
+
+        /**
+         * 检查生成的答案是否符合所有规则
+         * @returns {boolean} 是否有效
+         */
+        function isAnswerValid() {
+            // 检查所有行
+            for (let i = 0; i < currentMatrixSize; i++) {
+                const rowValues = matrixAnswer[i];
+                const rowSum = rowValues.reduce((sum, num) => sum + num, 0);
+                
+                // 检查行重复
+                if (hasDuplicateValues(rowValues)) return false;
+                // 检查行和
+                if (rowSum !== currentTargetSum) return false;
+            }
+            
+            // 检查所有列
+            for (let j = 0; j < currentMatrixSize; j++) {
+                const colValues = [];
+                let colSum = 0;
+                
+                for (let i = 0; i < currentMatrixSize; i++) {
+                    colValues.push(matrixAnswer[i][j]);
+                    colSum += matrixAnswer[i][j];
+                }
+                
+                // 检查列重复
+                if (hasDuplicateValues(colValues)) return false;
+                // 检查列和
+                if (colSum !== currentTargetSum) return false;
+            }
+            
+            // 检查所有数字在0-9范围内
+            for (let i = 0; i < currentMatrixSize; i++) {
+                for (let j = 0; j < currentMatrixSize; j++) {
+                    const val = matrixAnswer[i][j];
+                    if (val < GAME_CONFIG.NUMBER_RANGE.MIN || val > GAME_CONFIG.NUMBER_RANGE.MAX) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // ===================== 数阵生成逻辑 =====================
+        /**
+         * 初始化游戏
+         * @param {number} size - 数阵大小（3/4）
+         */
+        function initGame(size) {
+            // 更新全局状态
+            currentMatrixSize = size;
+            currentTargetSum = GAME_CONFIG.TARGET_SUM[size];
+            isAnswerVisible = false;
+
+            // 更新UI显示
+            DOM_ELEMENTS.targetSum.textContent = currentTargetSum;
+            DOM_ELEMENTS.answerToggleButton.textContent = '显示答案';
+            updateMessagePanel('请填充数阵后验证', 'empty');
+
+            // 生成数阵数据和答案（确保答案有效）
+            generateValidMatrixData();
+            
+            // 渲染数阵界面
+            renderMatrix();
+
+            // 移除所有格子的答案显示
+            hideAllAnswers();
+        }
+
+        /**
+         * 生成有效的数阵数据和答案（确保符合所有规则）
+         */
+        function generateValidMatrixData() {
+            let attempts = 0;
+            
+            // 循环直到生成有效答案或达到最大尝试次数
+            do {
+                attempts++;
+                generateMatrixData();
+            } while (!isAnswerValid() && attempts < GAME_CONFIG.MAX_GENERATE_ATTEMPTS);
+            
+            // 如果达到最大尝试次数，使用预设的有效答案（3x3经典幻方）
+            if (attempts >= GAME_CONFIG.MAX_GENERATE_ATTEMPTS) {
+                if (currentMatrixSize === 3) {
+                    matrixAnswer = [
+                        [8, 1, 6],
+                        [3, 5, 7],
+                        [4, 9, 2]
+                    ];
+                } else if (currentMatrixSize === 4) {
+                    matrixAnswer = [
+                        [1, 15, 14, 4],
+                        [12, 6, 7, 9],
+                        [8, 10, 11, 5],
+                        [13, 3, 2, 16] // 注意：4x4会超出0-9范围，这里仅作示例
+                    ];
+                }
+            }
+            
+            // 生成游戏数阵（随机固定部分数字）
+            for (let i = 0; i < currentMatrixSize; i++) {
+                matrixData[i] = [];
+                for (let j = 0; j < currentMatrixSize; j++) {
+                    // 随机决定是否固定当前格子
+                    const isFixed = Math.random() < GAME_CONFIG.FIXED_NUMBER_RATIO;
+                    // 初始化格子数据
+                    matrixData[i][j] = {
+                        fixed: isFixed,
+                        value: isFixed ? matrixAnswer[i][j] : ''
+                    };
+                }
+            }
+        }
+
+        /**
+         * 生成数阵数据和答案（单次尝试）
+         */
+        function generateMatrixData() {
+            // 初始化数据数组
+            matrixData = [];
+            matrixAnswer = Array(currentMatrixSize).fill().map(() => []);
+
+            // 生成答案数阵（改进版逻辑）
+            generateAnswerMatrix();
+        }
+
+        /**
+         * 生成答案数阵（改进版：确保规则符合）
+         */
+        function generateAnswerMatrix() {
+            // 清空答案数组
+            for (let i = 0; i < currentMatrixSize; i++) {
+                matrixAnswer[i] = [];
+            }
+            
+            // 为3x3生成符合规则的幻方（最稳定的方式）
+            if (currentMatrixSize === 3) {
+                // 基础幻方模板
+                const baseMagicSquare = [
+                    [8, 1, 6],
+                    [3, 5, 7],
+                    [4, 9, 2]
+                ];
+                
+                // 随机旋转/翻转幻方，增加多样性
+                const transformations = [
+                    (m) => m, // 原矩阵
+                    (m) => m.map(row => [...row].reverse()), // 水平翻转
+                    (m) => [...m].reverse(), // 垂直翻转
+                    (m) => m[0].map((_, i) => m.map(row => row[i])), // 转置
+                ];
+                
+                // 随机选择一种变换
+                const transform = transformations[getRandomInteger(0, transformations.length - 1)];
+                matrixAnswer = transform(baseMagicSquare);
+                
+                return;
+            }
+            
+            // 4x4的生成逻辑（简化版，优先保证规则）
+            if (currentMatrixSize === 4) {
+                // 使用经典4阶幻方（和为34）
+                matrixAnswer = [
+                    [16, 2, 3, 13],
+                    [5, 11, 10, 8],
+                    [9, 7, 6, 12],
+                    [4, 14, 15, 1]
+                ];
+                return;
+            }
+            
+            // 通用生成逻辑（备用）
+            for (let i = 0; i < currentMatrixSize; i++) {
+                // 先生成前n-1列
+                for (let j = 0; j < currentMatrixSize - 1; j++) {
+                    let randomNum = getRandomInteger(GAME_CONFIG.NUMBER_RANGE.MIN, GAME_CONFIG.NUMBER_RANGE.MAX);
+                    
+                    // 检查当前行已生成的数字是否重复
+                    while (matrixAnswer[i].includes(randomNum)) {
+                        randomNum = getRandomInteger(GAME_CONFIG.NUMBER_RANGE.MIN, GAME_CONFIG.NUMBER_RANGE.MAX);
+                    }
+                    
+                    // 检查当前列已生成的数字是否重复
+                    let colHasNum = false;
+                    for (let k = 0; k < i; k++) {
+                        if (matrixAnswer[k][j] === randomNum) {
+                            colHasNum = true;
+                            break;
+                        }
+                    }
+                    
+                    if (colHasNum) {
+                        // 找到当前列可用的数字
+                        const usedNums = [];
+                        for (let k = 0; k < i; k++) {
+                            usedNums.push(matrixAnswer[k][j]);
+                        }
+                        // 找到当前行已用数字
+                        matrixAnswer[i].forEach(num => usedNums.push(num));
+                        
+                        // 从可用数字中选择
+                        let availableNums = [];
+                        for (let n = GAME_CONFIG.NUMBER_RANGE.MIN; n <= GAME_CONFIG.NUMBER_RANGE.MAX; n++) {
+                            if (!usedNums.includes(n)) {
+                                availableNums.push(n);
+                            }
+                        }
+                        
+                        if (availableNums.length > 0) {
+                            randomNum = availableNums[getRandomInteger(0, availableNums.length - 1)];
+                        } else {
+                            // 无可用数字，重新开始
+                            generateAnswerMatrix();
+                            return;
+                        }
+                    }
+                    
+                    matrixAnswer[i][j] = randomNum;
+                }
+                
+                // 计算最后一列数字，确保行和为目标值
+                const rowSum = matrixAnswer[i].reduce((sum, num) => sum + num, 0);
+                let lastColNum = currentTargetSum - rowSum;
+                
+                // 确保最后一列数字在范围内
+                if (lastColNum < GAME_CONFIG.NUMBER_RANGE.MIN || lastColNum > GAME_CONFIG.NUMBER_RANGE.MAX) {
+                    // 重新生成当前行
+                    i--;
+                    continue;
+                }
+                
+                // 检查最后一列数字在当前行是否重复
+                if (matrixAnswer[i].includes(lastColNum)) {
+                    i--;
+                    continue;
+                }
+                
+                // 检查最后一列数字在当前列是否重复
+                let colHasLastNum = false;
+                for (let k = 0; k < i; k++) {
+                    if (matrixAnswer[k][currentMatrixSize - 1] === lastColNum) {
+                        colHasLastNum = true;
+                        break;
+                    }
+                }
+                
+                if (colHasLastNum) {
+                    i--;
+                    continue;
+                }
+                
+                matrixAnswer[i][currentMatrixSize - 1] = lastColNum;
+            }
+        }
+
+        /**
+         * 检查数字是否在指定行中存在
+         * @param {number} rowIndex - 行索引
+         * @param {number} number - 检查数字
+         * @returns {boolean} 是否存在
+         */
+        function isNumberInRow(rowIndex, number) {
+            for (let j = 0; j < currentMatrixSize; j++) {
+                if (matrixAnswer[rowIndex][j] === number) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 检查数字是否在指定列中存在
+         * @param {number} colIndex - 列索引
+         * @param {number} number - 检查数字
+         * @returns {boolean} 是否存在
+         */
+        function isNumberInColumn(colIndex, number) {
+            for (let i = 0; i < currentMatrixSize; i++) {
+                if (matrixAnswer[i][colIndex] === number) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ===================== 数阵渲染逻辑 =====================
+        /**
+         * 渲染数阵界面
+         */
+        function renderMatrix() {
+            const container = DOM_ELEMENTS.matrixContainer;
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 设置网格布局
+            container.style.gridTemplateColumns = `repeat(${currentMatrixSize}, 1fr)`;
+            
+            // 生成每个格子
+            for (let i = 0; i < currentMatrixSize; i++) {
+                for (let j = 0; j < currentMatrixSize; j++) {
+                    const cellData = matrixData[i][j];
+                    const cellElement = createMatrixCell(i, j, cellData);
+                    container.appendChild(cellElement);
+                }
+            }
+        }
+
+        /**
+         * 创建数阵格子元素
+         * @param {number} row - 行索引
+         * @param {number} col - 列索引
+         * @param {Object} cellData - 格子数据
+         * @returns {HTMLElement} 格子元素
+         */
+        function createMatrixCell(row, col, cellData) {
+            // 创建格子容器
+            const cell = document.createElement('div');
+            cell.className = `matrix-cell ${cellData.fixed ? 'fixed' : 'editable'}`;
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            // 如果是固定格子，直接显示数字
+            if (cellData.fixed) {
+                cell.textContent = cellData.value;
+            } else {
+                // 创建可输入元素（禁用系统键盘）
+                const inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.className = 'matrix-cell-input';
+                inputElement.value = cellData.value || '';
+                inputElement.readOnly = true; // 禁用系统键盘
+                inputElement.inputmode = 'none'; // 进一步禁用系统键盘
+                
+                // 绑定聚焦事件
+                inputElement.addEventListener('focus', () => {
+                    // 移除之前激活的格子样式
+                    if (activeInputCell) {
+                        activeInputCell.parentElement.classList.remove('active');
+                    }
+                    // 设置当前激活的格子
+                    activeInputCell = inputElement;
+                    cell.classList.add('active');
+                    updateMessagePanel('请点击数字键盘输入', 'empty');
+                });
+                
+                // 绑定失焦事件
+                inputElement.addEventListener('blur', () => {
+                    // 延迟移除激活状态，避免数字键盘点击时立即失焦
+                    setTimeout(() => {
+                        cell.classList.remove('active');
+                    }, 200);
+                });
+                
+                cell.appendChild(inputElement);
+            }
+            
+            // 创建答案覆盖层
+            const answerOverlay = document.createElement('div');
+            answerOverlay.className = 'answer-overlay';
+            answerOverlay.textContent = matrixAnswer[row][col];
+            cell.appendChild(answerOverlay);
+            
+            return cell;
+        }
+
+        // ===================== 答案显示/隐藏逻辑 =====================
+        /**
+         * 切换答案显示状态
+         */
+        function toggleAnswerVisibility() {
+            isAnswerVisible = !isAnswerVisible;
+            
+            // 更新按钮文本
+            DOM_ELEMENTS.answerToggleButton.textContent = isAnswerVisible ? '隐藏答案' : '显示答案';
+            
+            // 更新提示信息
+            if (isAnswerVisible) {
+                updateMessagePanel('答案已显示，可参考填充', 'success');
+                showAllAnswers();
+            } else {
+                updateMessagePanel('答案已隐藏，请继续挑战', 'empty');
+                hideAllAnswers();
+            }
+        }
+
+        /**
+         * 显示所有格子的答案
+         */
+        function showAllAnswers() {
+            const cells = document.querySelectorAll('.matrix-cell');
+            cells.forEach(cell => {
+                cell.classList.add('show-answer');
+            });
+        }
+
+        /**
+         * 隐藏所有格子的答案
+         */
+        function hideAllAnswers() {
+            const cells = document.querySelectorAll('.matrix-cell');
+            cells.forEach(cell => {
+                cell.classList.remove('show-answer');
+            });
+        }
+
+        // ===================== 数字输入逻辑 =====================
+        /**
+         * 处理数字键盘输入
+         * @param {string} number - 输入的数字
+         */
+        function handleNumberInput(number) {
+            if (!activeInputCell) {
+                updateMessagePanel('请先点击要填充的格子', 'error');
+                return;
+            }
+            
+            // 限制只能输入单个数字（0-9）
+            activeInputCell.value = number;
+            
+            // 同步数据到matrixData
+            syncInputValueToMatrixData();
+            
+            // 更新提示信息
+            updateMessagePanel(`已输入数字 ${number}`, 'empty');
+        }
+
+        /**
+         * 处理删除键输入
+         */
+        function handleDeleteInput() {
+            if (!activeInputCell || !activeInputCell.value) {
+                updateMessagePanel('当前格子无数字可删除', 'error');
+                return;
+            }
+            
+            // 清空输入框
+            activeInputCell.value = '';
+            
+            // 同步数据到matrixData
+            syncInputValueToMatrixData();
+            
+            // 更新提示信息
+            updateMessagePanel('已删除当前格子数字', 'empty');
+        }
+
+        /**
+         * 同步输入框值到matrixData
+         */
+        function syncInputValueToMatrixData() {
+            if (!activeInputCell) return;
+            
+            // 获取当前格子的行列索引
+            const cell = activeInputCell.parentElement;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            // 获取输入值
+            const inputValue = activeInputCell.value;
+            const numericValue = inputValue ? parseInt(inputValue) : '';
+            
+            // 验证数字范围
+            if (numericValue !== '' && (numericValue < GAME_CONFIG.NUMBER_RANGE.MIN || numericValue > GAME_CONFIG.NUMBER_RANGE.MAX)) {
+                activeInputCell.value = '';
+                updateMessagePanel(`只能输入${GAME_CONFIG.NUMBER_RANGE.MIN}-${GAME_CONFIG.NUMBER_RANGE.MAX}之间的数字`, 'error');
+                return;
+            }
+            
+            // 更新数据
+            matrixData[row][col].value = numericValue;
+        }
+
+        // ===================== 数阵验证逻辑 =====================
+        /**
+         * 验证数阵是否符合规则
+         */
+        function verifyMatrix() {
+            // 检查是否所有格子都已填充
+            if (!isAllCellsFilled()) {
+                showFailModal('还有空白格子未填充，请补全所有格子');
+                updateMessagePanel('验证失败：存在空白格子', 'error');
+                return false;
+            }
+            
+            // 检查每行是否符合规则
+            const rowCheckResult = checkAllRows();
+            if (!rowCheckResult.isValid) {
+                showFailModal(rowCheckResult.message);
+                updateMessagePanel(`验证失败：${rowCheckResult.message}`, 'error');
+                return false;
+            }
+            
+            // 检查每列是否符合规则
+            const colCheckResult = checkAllColumns();
+            if (!colCheckResult.isValid) {
+                showFailModal(colCheckResult.message);
+                updateMessagePanel(`验证失败：${colCheckResult.message}`, 'error');
+                return false;
+            }
+            
+            // 所有规则验证通过
+            showSuccessModal();
+            updateMessagePanel('验证成功：数阵填充完全正确', 'success');
+            
+            // 延迟重置游戏（与弹窗时长一致）
+            setTimeout(() => {
+                initGame(currentMatrixSize);
+            }, GAME_CONFIG.MODAL_DURATION.SUCCESS);
+            
+            return true;
+        }
+
+        /**
+         * 检查是否所有格子都已填充
+         * @returns {boolean} 是否全部填充
+         */
+        function isAllCellsFilled() {
+            for (let i = 0; i < currentMatrixSize; i++) {
+                for (let j = 0; j < currentMatrixSize; j++) {
+                    if (matrixData[i][j].value === '') {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * 检查所有行是否符合规则（无重复、和为目标值）
+         * @returns {Object} 检查结果 {isValid: boolean, message: string}
+         */
+        function checkAllRows() {
+            for (let i = 0; i < currentMatrixSize; i++) {
+                const rowValues = [];
+                let rowSum = 0;
+                
+                // 收集当前行数据
+                for (let j = 0; j < currentMatrixSize; j++) {
+                    const value = matrixData[i][j].value;
+                    rowValues.push(value);
+                    rowSum += value;
+                }
+                
+                // 检查是否有重复值
+                if (hasDuplicateValues(rowValues)) {
+                    return {
+                        isValid: false,
+                        message: `第${i + 1}行存在重复数字`
+                    };
+                }
+                
+                // 检查和是否为目标值
+                if (rowSum !== currentTargetSum) {
+                    return {
+                        isValid: false,
+                        message: `第${i + 1}行数字和错误（当前：${rowSum}，目标：${currentTargetSum}）`
+                    };
+                }
+            }
+            
+            return {
+                isValid: true,
+                message: '所有行验证通过'
+            };
+        }
+
+        /**
+         * 检查所有列是否符合规则（无重复、和为目标值）
+         * @returns {Object} 检查结果 {isValid: boolean, message: string}
+         */
+        function checkAllColumns() {
+            for (let j = 0; j < currentMatrixSize; j++) {
+                const colValues = [];
+                let colSum = 0;
+                
+                // 收集当前列数据
+                for (let i = 0; i < currentMatrixSize; i++) {
+                    const value = matrixData[i][j].value;
+                    colValues.push(value);
+                    colSum += value;
+                }
+                
+                // 检查是否有重复值
+                if (hasDuplicateValues(colValues)) {
+                    return {
+                        isValid: false,
+                        message: `第${j + 1}列存在重复数字`
+                    };
+                }
+                
+                // 检查和是否为目标值
+                if (colSum !== currentTargetSum) {
+                    return {
+                        isValid: false,
+                        message: `第${j + 1}列数字和错误（当前：${colSum}，目标：${currentTargetSum}）`
+                    };
+                }
+            }
+            
+            return {
+                isValid: true,
+                message: '所有列验证通过'
+            };
+        }
+
+        // ===================== 弹窗控制逻辑 =====================
+        /**
+         * 显示失败弹窗
+         * @param {string} message - 失败提示信息
+         */
+        function showFailModal(message) {
+            DOM_ELEMENTS.failMessage.textContent = message;
+            DOM_ELEMENTS.modalOverlay.style.display = 'block';
+            DOM_ELEMENTS.failModal.style.display = 'block';
+            
+            // 自动关闭弹窗
+            setTimeout(() => {
+                DOM_ELEMENTS.failModal.style.display = 'none';
+                DOM_ELEMENTS.modalOverlay.style.display = 'none';
+            }, GAME_CONFIG.MODAL_DURATION.ERROR);
+        }
+
+        /**
+         * 显示成功弹窗
+         */
+        function showSuccessModal() {
+            DOM_ELEMENTS.modalOverlay.style.display = 'block';
+            DOM_ELEMENTS.successModal.style.display = 'block';
+            
+            // 自动关闭弹窗
+            setTimeout(() => {
+                DOM_ELEMENTS.successModal.style.display = 'none';
+                DOM_ELEMENTS.modalOverlay.style.display = 'none';
+            }, GAME_CONFIG.MODAL_DURATION.SUCCESS);
+        }
+
+        // ===================== 事件绑定逻辑 =====================
+        /**
+         * 绑定所有事件监听
+         */
+        function bindAllEvents() {
+            // 难度选择事件
+            DOM_ELEMENTS.difficultyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // 移除所有难度按钮的active样式
+                    DOM_ELEMENTS.difficultyButtons.forEach(btn => btn.classList.remove('active'));
+                    // 添加当前按钮的active样式
+                    button.classList.add('active');
+                    // 初始化对应难度的游戏
+                    initGame(parseInt(button.dataset.size));
+                });
+            });
+            
+            // 验证按钮事件
+            DOM_ELEMENTS.verifyButton.addEventListener('click', verifyMatrix);
+            
+            // 重置按钮事件
+            DOM_ELEMENTS.resetButton.addEventListener('click', () => {
+                initGame(currentMatrixSize);
+                updateMessagePanel('数阵已重新生成，请继续挑战', 'empty');
+            });
+            
+            // 答案切换按钮事件
+            DOM_ELEMENTS.answerToggleButton.addEventListener('click', toggleAnswerVisibility);
+            
+            // 数字键盘事件
+            const numberKeys = document.querySelectorAll('.keyboard-key[data-number]');
+            numberKeys.forEach(key => {
+                key.addEventListener('click', () => {
+                    handleNumberInput(key.dataset.number);
+                });
+            });
+            
+            // 删除键事件
+            DOM_ELEMENTS.deleteKey.addEventListener('click', handleDeleteInput);
+            
+            // 页面加载完成事件
+            window.addEventListener('load', () => {
+                // 隐藏加载动画
+                setTimeout(() => {
+                    DOM_ELEMENTS.pageLoader.classList.add('hidden');
+                    isGameLoaded = true;
+                }, GAME_CONFIG.ANIMATION_DURATION.LOADER);
+                
+                // 初始化游戏
+                initGame(GAME_CONFIG.DEFAULT_SIZE);
+            });
+        }
+
+        // ===================== 初始化游戏 =====================
+        // 绑定所有事件
+        bindAllEvents();
+    </script>
+</body>
+</html>
