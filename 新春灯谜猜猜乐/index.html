@@ -1,0 +1,1032 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新春灯谜猜猜乐 - 2026龙年特别版</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f3e6;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e64340;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4380d;
+        }
+
+        /* 页面基础样式 */
+        body {
+            background-color: #f8f3e6;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e64340' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        /* 主容器样式 */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 30px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(230, 67, 64, 0.25);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 顶部装饰 */
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, #e64340, #ff9a44, #e64340);
+        }
+
+        /* 标题样式 */
+        h1 {
+            color: #e64340;
+            font-size: 3rem;
+            margin-bottom: 25px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            display: inline-block;
+            padding: 0 20px;
+        }
+
+        h1::after {
+            content: "🐉";
+            margin-left: 15px;
+            font-size: 2.5rem;
+            animation: dragonFloat 3s ease-in-out infinite;
+        }
+
+        h1::before {
+            content: "🧧";
+            margin-right: 15px;
+            font-size: 2.5rem;
+            animation: redPacket 2s ease-in-out infinite;
+        }
+
+        /* 动画效果 */
+        @keyframes dragonFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes redPacket {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 游戏信息区域 */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            padding: 15px 20px;
+            background-color: #fff8f0;
+            border-radius: 10px;
+            border: 1px solid #ffe0b2;
+        }
+
+        .score {
+            font-size: 1.4rem;
+            color: #d4380d;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .score i {
+            margin-right: 8px;
+            font-style: normal;
+            color: #ff9a44;
+        }
+
+        .difficulty {
+            font-size: 1.2rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+
+        .difficulty select {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: 1px solid #e64340;
+            border-radius: 5px;
+            background-color: white;
+            color: #d4380d;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .question-count {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        /* 灯谜卡片样式 */
+        .riddle-card {
+            background-color: #fff8f0;
+            border: 3px solid #e64340;
+            border-radius: 15px;
+            padding: 40px 30px;
+            margin-bottom: 40px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .riddle-card::before {
+            content: "灯谜";
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            background-color: #e64340;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .riddle-question {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            padding: 0 10px;
+        }
+
+        .riddle-answer {
+            font-size: 1.6rem;
+            color: #e64340;
+            font-weight: bold;
+            margin: 20px 0;
+            display: none;
+            padding: 15px 25px;
+            background-color: #ffe8e8;
+            border-radius: 10px;
+            animation: pulse 1s ease-in-out;
+        }
+
+        /* 输入答案区域 */
+        .answer-input-area {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .answer-input {
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            border: 2px solid #e64340;
+            border-radius: 8px;
+            width: 70%;
+            max-width: 400px;
+            outline: none;
+            margin-right: 10px;
+        }
+
+        .answer-input:focus {
+            border-color: #ff9a44;
+            box-shadow: 0 0 8px rgba(255, 154, 68, 0.4);
+        }
+
+        .submit-answer {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4ca520;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-answer:hover {
+            background-color: #3d8b18;
+            transform: translateY(-2px);
+        }
+
+        /* 提示信息 */
+        .hint-message {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            height: 24px;
+            color: #666;
+        }
+
+        /* 按钮样式 */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .btn:hover::after {
+            left: 100%;
+        }
+
+        .show-answer {
+            background-color: #e64340;
+            color: white;
+        }
+
+        .show-answer:hover {
+            background-color: #d4380d;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(212, 56, 13, 0.2);
+        }
+
+        .next-riddle {
+            background-color: #4ca520;
+            color: white;
+        }
+
+        .next-riddle:hover {
+            background-color: #3d8b18;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(61, 139, 24, 0.2);
+        }
+
+        .reset-game {
+            background-color: #1890ff;
+            color: white;
+        }
+
+        .reset-game:hover {
+            background-color: #096dd9;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(9, 109, 217, 0.2);
+        }
+
+        .record-btn {
+            background-color: #ff9a44;
+            color: white;
+        }
+
+        .record-btn:hover {
+            background-color: #ff8800;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(255, 136, 0, 0.2);
+        }
+
+        /* 答题记录弹窗 */
+        .record-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            color: #e64340;
+            transform: scale(1.1);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: #e64340;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .record-list {
+            list-style: none;
+        }
+
+        .record-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .record-question {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .record-answer {
+            font-size: 1rem;
+            color: #e64340;
+            font-weight: bold;
+        }
+
+        .record-difficulty {
+            font-size: 0.9rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* 排行榜区域 */
+        .ranking-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px dashed #ffe0b2;
+        }
+
+        .ranking-title {
+            font-size: 1.8rem;
+            color: #e64340;
+            margin-bottom: 20px;
+        }
+
+        .ranking-list {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .ranking-item {
+            width: 120px;
+            height: 150px;
+            background-color: #fff8f0;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .rank-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e64340;
+            margin-bottom: 10px;
+        }
+
+        .rank-score {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            margin-top: 50px;
+            color: #666;
+            font-size: 1rem;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        .footer .copyright {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            h1::before, h1::after {
+                font-size: 1.8rem;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .riddle-question {
+                font-size: 1.5rem;
+            }
+            
+            .riddle-answer {
+                font-size: 1.3rem;
+            }
+            
+            .btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+            
+            .answer-input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+            
+            .submit-answer {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .riddle-card {
+                padding: 30px 15px;
+                min-height: 200px;
+            }
+            
+            .riddle-question {
+                font-size: 1.3rem;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>新春灯谜猜猜乐</h1>
+        
+        <!-- 游戏信息区域 -->
+        <div class="game-info">
+            <div class="score">
+                <i>🏆</i> 当前得分: <span id="score">0</span> 分
+            </div>
+            <div class="difficulty">
+                难度选择:
+                <select id="difficultySelect">
+                    <option value="easy">简单</option>
+                    <option value="medium" selected>中等</option>
+                    <option value="hard">困难</option>
+                </select>
+            </div>
+            <div class="question-count">
+                已答题目: <span id="answeredCount">0</span> / <span id="totalCount">0</span>
+            </div>
+        </div>
+        
+        <!-- 灯谜卡片 -->
+        <div class="riddle-card">
+            <div class="riddle-question" id="riddle-question">点击「下一题」开始猜灯谜吧！</div>
+            
+            <!-- 答案输入区域 -->
+            <div class="answer-input-area" id="answerInputArea">
+                <input type="text" class="answer-input" id="answerInput" placeholder="请输入你的答案...">
+                <button class="submit-answer" id="submitAnswerBtn">提交答案</button>
+            </div>
+            
+            <!-- 提示信息 -->
+            <div class="hint-message" id="hintMessage"></div>
+            
+            <!-- 答案显示区域 -->
+            <div class="riddle-answer" id="riddle-answer"></div>
+        </div>
+
+        <!-- 按钮组 -->
+        <div class="btn-group">
+            <button class="btn show-answer" id="showAnswerBtn">查看答案</button>
+            <button class="btn next-riddle" id="nextRiddleBtn">下一题</button>
+            <button class="btn reset-game" id="resetGameBtn">重置游戏</button>
+            <button class="btn record-btn" id="recordBtn">答题记录</button>
+        </div>
+
+        <!-- 排行榜区域 -->
+        <div class="ranking-section">
+            <h2 class="ranking-title">今日排行榜</h2>
+            <div class="ranking-list">
+                <div class="ranking-item">
+                    <div class="rank-number">🥇</div>
+                    <div class="rank-score">90分</div>
+                </div>
+                <div class="ranking-item">
+                    <div class="rank-number">🥈</div>
+                    <div class="rank-score">80分</div>
+                </div>
+                <div class="ranking-item">
+                    <div class="rank-number">🥉</div>
+                    <div class="rank-score">70分</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>2026龙年大吉 🐉 新春快乐，阖家幸福 🎆</p>
+            <p class="copyright">© 2026 新春灯谜猜猜乐 版权所有</p>
+        </div>
+    </div>
+
+    <!-- 答题记录弹窗 -->
+    <div class="record-modal" id="recordModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <h2 class="modal-title">我的答题记录</h2>
+            <ul class="record-list" id="recordList">
+                <!-- 答题记录会动态生成 -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // ===================== 灯谜题库（按难度分级）=====================
+        const riddles = {
+            // 简单难度
+            easy: [
+                { question: "身穿皮袍黄又黄，呼啸一声百兽慌，虽然没率兵和将，威风凛凛山大王（打一动物）", answer: "老虎" },
+                { question: "一个黑孩，从不开口，要是开口，掉出舌头（打一食物）", answer: "瓜子" },
+                { question: "屋子方方，有门没窗，屋外热烘，屋里冰霜（打一家电）", answer: "冰箱" },
+                { question: "头戴红帽子，身披五彩衣，从来不唱戏，喜欢吊嗓子（打一动物）", answer: "公鸡" },
+                { question: "小时穿黑衣，大时穿绿袍，水里过日子，岸上来睡觉（打一动物）", answer: "青蛙" },
+                { question: "有面没有口，有脚没有手，虽有四只脚，自己不会走（打一物品）", answer: "桌子" },
+                { question: "白嫩小宝宝，洗澡吹泡泡，洗洗身体小，再洗不见了（打一生活用品）", answer: "香皂" },
+                { question: "身穿绿衣裳，肚里水汪汪，生的子儿多，个个黑脸膛（打一水果）", answer: "西瓜" },
+                { question: "耳朵长，尾巴短，红眼睛，白毛衫，三瓣嘴儿胆子小，青菜萝卜吃个饱（打一动物）", answer: "兔子" },
+                { question: "一个小姑娘，生在水中央，身穿粉红衫，坐在绿船上（打一植物）", answer: "荷花" }
+            ],
+            // 中等难度
+            medium: [
+                { question: "拜年（打一作家名）", answer: "贺敬之" },
+                { question: "除夕守岁数钟声（打一商业用语）", answer: "年终盘点" },
+                { question: "年终岁尾，不缺鱼米（打一字）", answer: "鳞" },
+                { question: "除夕夜守岁（打一歇后语）", answer: "辞旧迎新" },
+                { question: "初一（打一成语）", answer: "日新月异" },
+                { question: "元旦元宵捷报频传（打一成语）", answer: "节节胜利" },
+                { question: "春节三日守桥头（打一字）", answer: "休" },
+                { question: "春节三日去云南（打一字）", answer: "天" },
+                { question: "拜年莫忘压岁钱（打一花卉名）", answer: "迎春" },
+                { question: "新年走红发红包（打一商品名）", answer: "春卷" },
+                { question: "春节第一餐（打一节日）", answer: "元旦" },
+                { question: "过春节逢生日（打一称谓）", answer: "寿星" },
+                { question: "春节更换年画（打一成语）", answer: "弃旧图新" },
+                { question: "春节前营运特点（打一成语）", answer: "反客为主" },
+                { question: "天天过春节（打一成语）", answer: "度日如年" }
+            ],
+            // 困难难度
+            hard: [
+                { question: "除夕夜家家灯火通明（打一成语）", answer: "无所不晓" },
+                { question: "春节三日有人来（打一字）", answer: "从" },
+                { question: "春节三日，人人团聚（打一字）", answer: "众" },
+                { question: "春节三日，下乡扶贫（打一字）", answer: "仓" },
+                { question: "春节三日多云（打一字）", answer: "会" },
+                { question: "春节三日夺高产（打一字）", answer: "位" },
+                { question: "春节三日去游山（打一字）", answer: "仙" },
+                { question: "春节三日西北游（打一字）", answer: "仑" },
+                { question: "春节三日有客来（打一字）", answer: "傧" },
+                { question: "春节三日在厂里（打一字）", answer: "仄" },
+                { question: "春节三日重相逢（打一字）", answer: "从" },
+                { question: "新年的旋律（打一文学名词）", answer: "元曲" },
+                { question: "新年健康（打一文学名词）", answer: "元嘉体" },
+                { question: "新年依始（打一邮政集邮词语）", answer: "龙头" },
+                { question: "大家新年快乐（打一作家名）", answer: "朱自清" },
+                { question: "新年走红发红包（打一商品名）", answer: "春卷" },
+                { question: "新年伊始好储蓄（打一金融词语）", answer: "一元起存" },
+                { question: "新年快乐（打一人名）", answer: "元好问" },
+                { question: "新年献词（打一教育词语）", answer: "第一节日语" },
+                { question: "新年走上致富路（打一诗词句）", answer: "当春乃发生" }
+            ]
+        };
+
+        // ===================== DOM元素获取 =====================
+        const scoreElement = document.getElementById('score');
+        const questionElement = document.getElementById('riddle-question');
+        const answerElement = document.getElementById('riddle-answer');
+        const answerInputArea = document.getElementById('answerInputArea');
+        const answerInput = document.getElementById('answerInput');
+        const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+        const hintMessage = document.getElementById('hintMessage');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const nextRiddleBtn = document.getElementById('nextRiddleBtn');
+        const resetGameBtn = document.getElementById('resetGameBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const difficultySelect = document.getElementById('difficultySelect');
+        const answeredCountElement = document.getElementById('answeredCount');
+        const totalCountElement = document.getElementById('totalCount');
+        const recordModal = document.getElementById('recordModal');
+        const closeModal = document.getElementById('closeModal');
+        const recordList = document.getElementById('recordList');
+
+        // ===================== 游戏状态管理 =====================
+        let gameState = {
+            currentRiddleIndex: -1,
+            score: 0,
+            answered: false,
+            currentDifficulty: 'medium',
+            answeredCount: 0,
+            totalCount: 0,
+            answerRecord: [],
+            userAnswer: ''
+        };
+
+        // 更新游戏状态显示
+        function updateGameStateDisplay() {
+            scoreElement.textContent = gameState.score;
+            answeredCountElement.textContent = gameState.answeredCount;
+            totalCountElement.textContent = gameState.totalCount;
+        }
+
+        // ===================== 初始化游戏 =====================
+        function initGame() {
+            // 重置游戏状态
+            gameState = {
+                currentRiddleIndex: -1,
+                score: 0,
+                answered: false,
+                currentDifficulty: difficultySelect.value,
+                answeredCount: 0,
+                totalCount: riddles[difficultySelect.value].length,
+                answerRecord: [],
+                userAnswer: ''
+            };
+
+            // 更新显示
+            updateGameStateDisplay();
+            questionElement.textContent = "点击「下一题」开始猜灯谜吧！";
+            answerElement.style.display = "none";
+            answerElement.textContent = "";
+            answerInputArea.style.display = "none";
+            hintMessage.textContent = "";
+            answerInput.value = "";
+            
+            // 更新总题数
+            totalCountElement.textContent = gameState.totalCount;
+        }
+
+        // ===================== 加载下一个灯谜 =====================
+        function loadNextRiddle() {
+            // 获取当前难度的灯谜列表
+            const currentRiddles = riddles[gameState.currentDifficulty];
+            
+            if (currentRiddles.length === 0) {
+                questionElement.textContent = "暂无该难度的灯谜！";
+                return;
+            }
+
+            // 随机生成不重复的索引
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * currentRiddles.length);
+            } while (newIndex === gameState.currentRiddleIndex && currentRiddles.length > 1);
+            
+            // 更新当前灯谜索引
+            gameState.currentRiddleIndex = newIndex;
+            gameState.answered = false;
+            gameState.userAnswer = '';
+            
+            // 显示灯谜题目
+            questionElement.textContent = currentRiddles[newIndex].question;
+            answerElement.style.display = "none";
+            answerElement.textContent = "";
+            hintMessage.textContent = "";
+            answerInput.value = "";
+            
+            // 显示答案输入区域
+            answerInputArea.style.display = "block";
+        }
+
+        // ===================== 提交答案验证 =====================
+        function submitAnswer() {
+            const currentRiddles = riddles[gameState.currentDifficulty];
+            
+            // 检查是否已加载灯谜
+            if (gameState.currentRiddleIndex === -1) {
+                hintMessage.textContent = "请先点击「下一题」选择灯谜！";
+                hintMessage.style.color = "#e64340";
+                return;
+            }
+            
+            // 检查是否已答题
+            if (gameState.answered) {
+                hintMessage.textContent = "该题已作答，点击「下一题」继续！";
+                hintMessage.style.color = "#ff9a44";
+                return;
+            }
+            
+            // 获取用户答案
+            const userAnswer = answerInput.value.trim();
+            if (!userAnswer) {
+                hintMessage.textContent = "请输入你的答案！";
+                hintMessage.style.color = "#e64340";
+                return;
+            }
+            
+            // 获取正确答案
+            const correctAnswer = currentRiddles[gameState.currentRiddleIndex].answer;
+            
+            // 记录用户答案
+            gameState.userAnswer = userAnswer;
+            
+            // 验证答案
+            if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                // 回答正确
+                hintMessage.textContent = "恭喜你，回答正确！🎉";
+                hintMessage.style.color = "#4ca520";
+                
+                // 根据难度加分
+                let scoreAdd = 0;
+                switch (gameState.currentDifficulty) {
+                    case 'easy':
+                        scoreAdd = 5;
+                        break;
+                    case 'medium':
+                        scoreAdd = 10;
+                        break;
+                    case 'hard':
+                        scoreAdd = 15;
+                        break;
+                }
+                
+                // 更新分数
+                gameState.score += scoreAdd;
+                gameState.answeredCount++;
+                
+                // 记录答题结果
+                gameState.answerRecord.push({
+                    question: currentRiddles[gameState.currentRiddleIndex].question,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: true,
+                    score: scoreAdd,
+                    difficulty: gameState.currentDifficulty
+                });
+            } else {
+                // 回答错误
+                hintMessage.textContent = `回答错误，正确答案是：${correctAnswer}`;
+                hintMessage.style.color = "#e64340";
+                
+                // 记录答题结果
+                gameState.answerRecord.push({
+                    question: currentRiddles[gameState.currentRiddleIndex].question,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: false,
+                    score: 0,
+                    difficulty: gameState.currentDifficulty
+                });
+                
+                gameState.answeredCount++;
+            }
+            
+            // 更新状态
+            gameState.answered = true;
+            updateGameStateDisplay();
+            
+            // 显示正确答案
+            answerElement.style.display = "block";
+            answerElement.textContent = `答案：${correctAnswer}`;
+        }
+
+        // ===================== 显示答案 =====================
+        function showAnswer() {
+            const currentRiddles = riddles[gameState.currentDifficulty];
+            
+            if (gameState.currentRiddleIndex === -1) {
+                alert("请先点击「下一题」选择灯谜！");
+                return;
+            }
+            
+            if (gameState.answered) return; // 防止重复操作
+            
+            // 显示答案
+            answerElement.style.display = "block";
+            answerElement.textContent = `答案：${currentRiddles[gameState.currentRiddleIndex].answer}`;
+            
+            // 记录未答题直接看答案
+            gameState.answerRecord.push({
+                question: currentRiddles[gameState.currentRiddleIndex].question,
+                userAnswer: "未作答",
+                correctAnswer: currentRiddles[gameState.currentRiddleIndex].answer,
+                isCorrect: false,
+                score: 0,
+                difficulty: gameState.currentDifficulty
+            });
+            
+            gameState.answered = true;
+            gameState.answeredCount++;
+            updateGameStateDisplay();
+            hintMessage.textContent = "已显示答案，点击「下一题」继续挑战！";
+            hintMessage.style.color = "#ff9a44";
+        }
+
+        // ===================== 显示答题记录 =====================
+        function showAnswerRecord() {
+            // 清空记录列表
+            recordList.innerHTML = "";
+            
+            // 生成记录项
+            if (gameState.answerRecord.length === 0) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'record-item';
+                emptyItem.innerHTML = `<div class="record-question">暂无答题记录</div>`;
+                recordList.appendChild(emptyItem);
+            } else {
+                gameState.answerRecord.forEach((record, index) => {
+                    const recordItem = document.createElement('li');
+                    recordItem.className = 'record-item';
+                    
+                    // 设置难度显示文本
+                    let difficultyText = "";
+                    switch (record.difficulty) {
+                        case 'easy':
+                            difficultyText = "难度：简单";
+                            break;
+                        case 'medium':
+                            difficultyText = "难度：中等";
+                            break;
+                        case 'hard':
+                            difficultyText = "难度：困难";
+                            break;
+                    }
+                    
+                    // 设置答案显示样式
+                    let answerHtml = "";
+                    if (record.isCorrect) {
+                        answerHtml = `
+                            <div class="record-answer">
+                                你的答案：${record.userAnswer} ✅ | 正确答案：${record.correctAnswer} | 得分：${record.score}
+                            </div>
+                        `;
+                    } else {
+                        answerHtml = `
+                            <div class="record-answer">
+                                你的答案：${record.userAnswer} ❌ | 正确答案：${record.correctAnswer} | 得分：${record.score}
+                            </div>
+                        `;
+                    }
+                    
+                    // 组装记录项
+                    recordItem.innerHTML = `
+                        <div class="record-question">${index + 1}. ${record.question}</div>
+                        ${answerHtml}
+                        <div class="record-difficulty">${difficultyText}</div>
+                    `;
+                    
+                    recordList.appendChild(recordItem);
+                });
+            }
+            
+            // 显示弹窗
+            recordModal.style.display = "flex";
+        }
+
+        // ===================== 事件绑定 =====================
+        // 难度选择变更
+        difficultySelect.addEventListener('change', function() {
+            initGame();
+        });
+
+        // 查看答案按钮
+        showAnswerBtn.addEventListener('click', showAnswer);
+
+        // 下一题按钮
+        nextRiddleBtn.addEventListener('click', loadNextRiddle);
+
+        // 重置游戏按钮
+        resetGameBtn.addEventListener('click', initGame);
+
+        // 提交答案按钮
+        submitAnswerBtn.addEventListener('click', submitAnswer);
+
+        // 答题记录按钮
+        recordBtn.addEventListener('click', showAnswerRecord);
+
+        // 关闭弹窗按钮
+        closeModal.addEventListener('click', function() {
+            recordModal.style.display = "none";
+        });
+
+        // 点击弹窗外区域关闭弹窗
+        window.addEventListener('click', function(e) {
+            if (e.target === recordModal) {
+                recordModal.style.display = "none";
+            }
+        });
+
+        // 回车键提交答案
+        answerInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+
+        // ===================== 初始化 =====================
+        window.addEventListener('load', function() {
+            initGame();
+            
+            // 添加音效（模拟）
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 这里可以添加点击音效
+                    // const audio = new Audio('click-sound.mp3');
+                    // audio.play();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
