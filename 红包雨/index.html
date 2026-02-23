@@ -1,0 +1,926 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新春红包雨 - 完整版</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            font-family: "微软雅黑", "SimHei", sans-serif;
+        }
+
+        /* 页面基础样式 */
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #8B0000, #CD5C5C, #FF4500);
+            position: relative;
+        }
+
+        /* 遮罩层 - 开场倒计时 */
+        .mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease;
+        }
+
+        .mask.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .countdown {
+            font-size: 120px;
+            color: #FFD700;
+            text-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700;
+            margin-bottom: 40px;
+            animation: countPulse 1s ease-in-out infinite;
+        }
+
+        .start-text {
+            font-size: 40px;
+            color: #FFFFFF;
+            text-shadow: 0 0 10px #FF0000;
+            margin-top: 20px;
+        }
+
+        /* 游戏控制栏 */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 80%;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            padding: 10px 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #FFD700;
+            z-index: 900;
+        }
+
+        .score-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .score-text {
+            font-size: 24px;
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .score-num {
+            font-size: 30px;
+            color: #FFFFFF;
+            background-color: #FF4500;
+            padding: 5px 15px;
+            border-radius: 10px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #FFD700;
+            color: #8B0000;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:hover {
+            background-color: #FFC107;
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-text {
+            color: #FFFFFF;
+            font-size: 16px;
+        }
+
+        .speed-slider {
+            width: 100px;
+            accent-color: #FFD700;
+        }
+
+        /* 红包容器 */
+        #redPacketContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 800;
+        }
+
+        /* 红包基础样式 */
+        .red-packet {
+            position: absolute;
+            width: 80px;
+            height: 100px;
+            background-color: #FF0000;
+            border-radius: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+            transform-origin: center center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* 红包不同样式 */
+        .packet-1 {
+            background: linear-gradient(45deg, #FF0000, #DC143C);
+        }
+
+        .packet-2 {
+            background: linear-gradient(45deg, #B22222, #8B0000);
+        }
+
+        .packet-3 {
+            background: linear-gradient(45deg, #FF4500, #FF6347);
+        }
+
+        /* 红包装饰 */
+        .red-packet::before {
+            content: "福";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: #FFD700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+
+        .red-packet::after {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 10px;
+            background-color: #FFD700;
+            border-radius: 5px;
+        }
+
+        /* 生肖红包 */
+        .year-animal::before {
+            content: "马";
+            font-size: 35px;
+            color: #FFFF00;
+        }
+
+        /* 福字红包 */
+        .fu-packet::before {
+            content: "福";
+            font-size: 40px;
+            color: #FFD700;
+            transform: translate(-50%, -50%) rotate(-10deg);
+        }
+
+        /* 红包炸开效果 */
+        .packet-burst {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FFD700, #FFA500, transparent);
+            z-index: 850;
+            pointer-events: none;
+            animation: burst 0.8s ease-out forwards;
+        }
+
+        /* 祝福语弹窗 */
+        .blessing-popup {
+            position: absolute;
+            padding: 15px 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            color: #8B0000;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 860;
+            pointer-events: none;
+            animation: popup 1.5s ease-out forwards;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 灯笼装饰 */
+        .lantern {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background-color: #FF3300;
+            border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+            z-index: 700;
+            box-shadow: 0 0 20px #FF3300;
+            animation: lanternSwing 4s ease-in-out infinite alternate;
+        }
+
+        .lantern::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 10px;
+            width: 40px;
+            height: 15px;
+            background-color: #FF6600;
+            border-radius: 0 0 50% 50%;
+        }
+
+        .lantern::before {
+            content: "福";
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #FFD700;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* 烟花容器 */
+        #fireworksContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 600;
+        }
+
+        /* 烟花粒子 */
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: firework 1s ease-out forwards;
+        }
+
+        /* 底部装饰 */
+        .bottom-decoration {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to top, #8B0000, transparent);
+            z-index: 500;
+            pointer-events: none;
+        }
+
+        /* 新年标题 */
+        .new-year-title {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            color: #FFD700;
+            text-shadow: 0 0 20px #FFD700, 0 0 40px #FF0000;
+            z-index: 400;
+            opacity: 0.2;
+            pointer-events: none;
+            animation: titleFloat 6s ease-in-out infinite alternate;
+        }
+
+        /* 动画定义 */
+        @keyframes countPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes burst {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+
+        @keyframes popup {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; top: -50px; }
+        }
+
+        @keyframes lanternSwing {
+            0% { transform: rotate(-5deg); }
+            100% { transform: rotate(5deg); }
+        }
+
+        @keyframes firework {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        @keyframes titleFloat {
+            0% { transform: translate(-50%, -50%) translateY(0); }
+            100% { transform: translate(-50%, -50%) translateY(-20px); }
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .countdown {
+                font-size: 80px;
+            }
+
+            .start-text {
+                font-size: 30px;
+            }
+
+            .control-panel {
+                flex-wrap: wrap;
+                padding: 10px;
+            }
+
+            .score-panel {
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+
+            .new-year-title {
+                font-size: 50px;
+            }
+
+            .red-packet {
+                width: 60px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 开场倒计时遮罩 -->
+    <div class="mask" id="mask">
+        <div class="countdown" id="countdown">3</div>
+        <div class="start-text">红包雨即将开始！</div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <div class="score-panel">
+            <div class="score-text">已收集红包：</div>
+            <div class="score-num" id="scoreNum">0</div>
+        </div>
+
+        <div class="speed-control">
+            <div class="speed-text">掉落速度：</div>
+            <input type="range" min="1" max="10" value="5" class="speed-slider" id="speedSlider">
+        </div>
+
+        <div class="btn-group">
+            <button class="control-btn" id="pauseBtn">暂停</button>
+            <button class="control-btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 新年标题 -->
+    <div class="new-year-title">新年快乐</div>
+
+    <!-- 底部装饰 -->
+    <div class="bottom-decoration"></div>
+
+    <!-- 灯笼装饰 -->
+    <div class="lantern" style="left: 50px; top: 50px;"></div>
+    <div class="lantern" style="right: 50px; top: 80px;"></div>
+    <div class="lantern" style="left: 200px; top: 120px;"></div>
+    <div class="lantern" style="right: 200px; top: 60px;"></div>
+
+    <!-- 容器 -->
+    <div id="redPacketContainer"></div>
+    <div id="fireworksContainer"></div>
+
+    <!-- 音频元素 -->
+    <audio id="dropSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-coin-collect-1687.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="clickSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="winSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-fairy-arcade-sparkle-866.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // ========== 全局变量定义 ==========
+        const redPacketContainer = document.getElementById('redPacketContainer');
+        const fireworksContainer = document.getElementById('fireworksContainer');
+        const mask = document.getElementById('mask');
+        const countdown = document.getElementById('countdown');
+        const scoreNum = document.getElementById('scoreNum');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const dropSound = document.getElementById('dropSound');
+        const clickSound = document.getElementById('clickSound');
+        const winSound = document.getElementById('winSound');
+
+        // 红包配置
+        let redPackets = [];
+        let score = 0;
+        let isPaused = false;
+        let dropSpeed = 5; // 基础掉落速度
+        let dropInterval = null;
+        let animationFrameId = null;
+
+        // 新年祝福语列表
+        const blessings = [
+            "恭喜发财", "万事如意", "阖家幸福", "新春快乐", "财源广进",
+            "步步高升", "大吉大利", "年年有余", "龙马精神", "福星高照",
+            "招财进宝", "一帆风顺", "心想事成", "前程似锦", "喜气洋洋",
+            "金玉满堂", "吉祥如意", "富贵吉祥", "岁岁平安", "大展宏图"
+        ];
+
+        // 红包样式类型
+        const packetTypes = ['packet-1', 'packet-2', 'packet-3'];
+        const specialTypes = ['year-animal', 'fu-packet'];
+
+        // ========== 工具函数 ==========
+        /**
+         * 生成随机数
+         * @param {number} min 最小值
+         * @param {number} max 最大值
+         * @returns {number} 随机数
+         */
+        function getRandomNum(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        /**
+         * 生成随机整数
+         * @param {number} min 最小值
+         * @param {number} max 最大值
+         * @returns {number} 随机整数
+         */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /**
+         * 播放音效
+         * @param {HTMLAudioElement} sound 音效元素
+         */
+        function playSound(sound) {
+            try {
+                sound.currentTime = 0;
+                sound.play().catch(err => console.log('音效播放失败:', err));
+            } catch (err) {
+                console.log('播放音效出错:', err);
+            }
+        }
+
+        /**
+         * 创建烟花效果
+         * @param {number} x x坐标
+         * @param {number} y y坐标
+         */
+        function createFirework(x, y) {
+            const colors = ['#FFD700', '#FF0000', '#FF4500', '#FFFF00', '#FF69B4'];
+            const particleCount = getRandomInt(20, 40);
+
+            for (let i = 0; i < particleCount; i++) {
+                const firework = document.createElement('div');
+                firework.className = 'firework';
+                
+                // 随机颜色和位置
+                const color = colors[getRandomInt(0, colors.length - 1)];
+                const angle = getRandomNum(0, Math.PI * 2);
+                const distance = getRandomNum(10, 80);
+                const posX = x + Math.cos(angle) * distance;
+                const posY = y + Math.sin(angle) * distance;
+
+                // 设置样式
+                firework.style.left = `${posX}px`;
+                firework.style.top = `${posY}px`;
+                firework.style.backgroundColor = color;
+                firework.style.boxShadow = `0 0 10px ${color}`;
+
+                // 随机大小
+                const size = getRandomNum(2, 6);
+                firework.style.width = `${size}px`;
+                firework.style.height = `${size}px`;
+
+                // 随机动画时长
+                const duration = getRandomNum(0.5, 1.5);
+                firework.style.animation = `firework ${duration}s ease-out forwards`;
+
+                fireworksContainer.appendChild(firework);
+
+                // 移除烟花元素
+                setTimeout(() => {
+                    if (firework.parentNode) {
+                        firework.parentNode.removeChild(firework);
+                    }
+                }, duration * 1000);
+            }
+        }
+
+        /**
+         * 创建祝福语弹窗
+         * @param {number} x x坐标
+         * @param {number} y y坐标
+         */
+        function createBlessingPopup(x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'blessing-popup';
+            
+            // 随机祝福语
+            const blessing = blessings[getRandomInt(0, blessings.length - 1)];
+            popup.textContent = blessing;
+
+            // 设置位置
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+
+            redPacketContainer.appendChild(popup);
+
+            // 移除弹窗
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
+            }, 1500);
+        }
+
+        /**
+         * 创建红包炸开效果
+         * @param {number} x x坐标
+         * @param {number} y y坐标
+         */
+        function createPacketBurst(x, y) {
+            const burst = document.createElement('div');
+            burst.className = 'packet-burst';
+            
+            // 设置位置
+            burst.style.left = `${x - 75}px`;
+            burst.style.top = `${y - 75}px`;
+
+            redPacketContainer.appendChild(burst);
+
+            // 移除炸开效果
+            setTimeout(() => {
+                if (burst.parentNode) {
+                    burst.parentNode.removeChild(burst);
+                }
+            }, 800);
+        }
+
+        // ========== 红包相关函数 ==========
+        /**
+         * 创建单个红包
+         */
+        function createRedPacket() {
+            if (isPaused) return;
+
+            // 创建红包元素
+            const packet = document.createElement('div');
+            packet.className = 'red-packet';
+
+            // 随机样式
+            const randomType = packetTypes[getRandomInt(0, packetTypes.length - 1)];
+            packet.classList.add(randomType);
+
+            // 随机特殊样式
+            if (Math.random() > 0.7) {
+                const specialType = specialTypes[getRandomInt(0, specialTypes.length - 1)];
+                packet.classList.add(specialType);
+            }
+
+            // 随机初始位置（水平）
+            const startX = getRandomNum(50, window.innerWidth - 100);
+            // 初始位置（垂直）- 屏幕外上方
+            const startY = getRandomNum(-200, -50);
+
+            // 设置初始样式
+            packet.style.left = `${startX}px`;
+            packet.style.top = `${startY}px`;
+
+            // 随机旋转角度
+            const rotateAngle = getRandomNum(-30, 30);
+            packet.style.transform = `rotate(${rotateAngle}deg)`;
+
+            // 随机缩放
+            const scale = getRandomNum(0.8, 1.2);
+            packet.style.transform += ` scale(${scale})`;
+
+            // 红包数据
+            const packetData = {
+                element: packet,
+                x: startX,
+                y: startY,
+                rotate: rotateAngle,
+                rotateSpeed: getRandomNum(-2, 2), // 旋转速度
+                speed: getRandomNum(dropSpeed * 0.5, dropSpeed * 1.5), // 掉落速度
+                swingAmplitude: getRandomNum(5, 15), // 摆动幅度
+                swingSpeed: getRandomNum(0.02, 0.05), // 摆动速度
+                swingOffset: getRandomNum(0, Math.PI * 2), // 摆动偏移
+                isRemoved: false
+            };
+
+            // 点击红包事件
+            packet.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                if (packetData.isRemoved || isPaused) return;
+
+                // 标记为已移除
+                packetData.isRemoved = true;
+
+                // 播放音效
+                playSound(clickSound);
+                playSound(winSound);
+
+                // 更新分数
+                score++;
+                scoreNum.textContent = score;
+
+                // 获取红包中心位置
+                const rect = packet.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                // 创建特效
+                createPacketBurst(centerX, centerY);
+                createBlessingPopup(centerX, centerY);
+                createFirework(centerX, centerY);
+
+                // 移除红包元素
+                if (packet.parentNode) {
+                    packet.parentNode.removeChild(packet);
+                }
+
+                // 从数组中移除
+                redPackets = redPackets.filter(p => p !== packetData);
+            });
+
+            // 鼠标悬停效果
+            packet.addEventListener('mouseenter', () => {
+                if (packetData.isRemoved || isPaused) return;
+                packet.style.transform += ' scale(1.1)';
+                packet.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.4)';
+            });
+
+            packet.addEventListener('mouseleave', () => {
+                if (packetData.isRemoved || isPaused) return;
+                packet.style.transform = `rotate(${packetData.rotate}deg) scale(${scale})`;
+                packet.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.3)';
+            });
+
+            // 添加到容器和数组
+            redPacketContainer.appendChild(packet);
+            redPackets.push(packetData);
+
+            // 播放掉落音效（随机）
+            if (Math.random() > 0.8) {
+                playSound(dropSound);
+            }
+        }
+
+        /**
+         * 更新红包位置和状态
+         */
+        function updateRedPackets() {
+            if (isPaused) {
+                animationFrameId = requestAnimationFrame(updateRedPackets);
+                return;
+            }
+
+            // 遍历所有红包
+            for (let i = redPackets.length - 1; i >= 0; i--) {
+                const packet = redPackets[i];
+
+                if (packet.isRemoved) {
+                    continue;
+                }
+
+                // 更新旋转角度
+                packet.rotate += packet.rotateSpeed;
+                packet.element.style.transform = `rotate(${packet.rotate}deg) scale(${packet.element.style.transform.split('scale(')[1].split(')')[0]})`;
+
+                // 计算摆动偏移
+                const swingX = Math.sin(Date.now() * packet.swingSpeed + packet.swingOffset) * packet.swingAmplitude;
+                
+                // 更新位置
+                packet.y += packet.speed;
+                packet.x += swingX;
+
+                // 应用位置
+                packet.element.style.top = `${packet.y}px`;
+                packet.element.style.left = `${packet.x}px`;
+
+                // 超出屏幕底部，移除红包
+                if (packet.y > window.innerHeight + 100) {
+                    // 移除元素
+                    if (packet.element.parentNode) {
+                        packet.element.parentNode.removeChild(packet.element);
+                    }
+                    // 从数组移除
+                    redPackets.splice(i, 1);
+                }
+            }
+
+            // 继续动画帧
+            animationFrameId = requestAnimationFrame(updateRedPackets);
+        }
+
+        /**
+         * 开始掉落红包
+         */
+        function startDroppingPackets() {
+            // 停止现有定时器
+            if (dropInterval) {
+                clearInterval(dropInterval);
+            }
+
+            // 设置新的掉落定时器
+            dropInterval = setInterval(() => {
+                if (!isPaused) {
+                    // 随机生成1-3个红包
+                    const count = getRandomInt(1, 3);
+                    for (let i = 0; i < count; i++) {
+                        setTimeout(createRedPacket, i * 100);
+                    }
+                }
+            }, getRandomInt(300, 800));
+        }
+
+        // ========== 控制函数 ==========
+        /**
+         * 暂停/继续游戏
+         */
+        function togglePause() {
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                pauseBtn.textContent = "继续";
+            } else {
+                pauseBtn.textContent = "暂停";
+                // 重新开始动画
+                updateRedPackets();
+            }
+        }
+
+        /**
+         * 重新开始游戏
+         */
+        function restartGame() {
+            // 暂停游戏
+            isPaused = true;
+            pauseBtn.textContent = "暂停";
+
+            // 清空红包
+            redPackets.forEach(packet => {
+                if (packet.element.parentNode) {
+                    packet.element.parentNode.removeChild(packet.element);
+                }
+            });
+            redPackets = [];
+
+            // 重置分数
+            score = 0;
+            scoreNum.textContent = score;
+
+            // 停止定时器和动画帧
+            if (dropInterval) {
+                clearInterval(dropInterval);
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            // 重新显示倒计时
+            mask.classList.remove('hide');
+            countdown.textContent = "3";
+            
+            // 重新倒计时
+            startCountdown();
+        }
+
+        /**
+         * 更新掉落速度
+         * @param {number} speed 新速度
+         */
+        function updateDropSpeed(speed) {
+            dropSpeed = speed;
+        }
+
+        // ========== 初始化函数 ==========
+        /**
+         * 开场倒计时
+         */
+        function startCountdown() {
+            let count = 3;
+            
+            const countInterval = setInterval(() => {
+                count--;
+                countdown.textContent = count;
+
+                if (count <= 0) {
+                    clearInterval(countInterval);
+                    mask.classList.add('hide');
+                    
+                    // 开始游戏
+                    isPaused = false;
+                    startDroppingPackets();
+                    updateRedPackets();
+                }
+            }, 1000);
+        }
+
+        /**
+         * 初始化事件监听
+         */
+        function initEventListeners() {
+            // 暂停/继续按钮
+            pauseBtn.addEventListener('click', togglePause);
+            
+            // 重新开始按钮
+            restartBtn.addEventListener('click', restartGame);
+            
+            // 速度滑块
+            speedSlider.addEventListener('input', (e) => {
+                updateDropSpeed(Number(e.target.value));
+            });
+
+            // 窗口大小变化处理
+            window.addEventListener('resize', () => {
+                // 移除超出屏幕的红包
+                for (let i = redPackets.length - 1; i >= 0; i--) {
+                    const packet = redPackets[i];
+                    if (packet.x < 0 || packet.x > window.innerWidth) {
+                        if (packet.element.parentNode) {
+                            packet.element.parentNode.removeChild(packet.element);
+                        }
+                        redPackets.splice(i, 1);
+                    }
+                }
+            });
+        }
+
+        /**
+         * 初始化游戏
+         */
+        function initGame() {
+            // 初始化事件监听
+            initEventListeners();
+            
+            // 开始倒计时
+            startCountdown();
+        }
+
+        // ========== 启动游戏 ==========
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
