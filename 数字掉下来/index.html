@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>7 Ate 9: 数字急转弯 Pro</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --danger: #ff7675;
+            --success: #55efc4;
+            --dark: #2d3436;
+            --bg: #0f0c29;
+            --font-main: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        /* 基础布局优化 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            height: 100svh; /* 适配手机短屏 */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: manipulation; /* 禁止浏览器默认手势 */
+        }
+
+        /* 游戏容器 */
+        #app {
+            background: rgba(255, 255, 255, 0.95);
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 800px;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 420px) {
+            #app { border-radius: 30px; height: 90vh; }
+        }
+
+        /* 顶部状态 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .score-pill {
+            background: var(--dark);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #combo-display {
+            font-weight: 900;
+            color: var(--primary);
+            font-style: italic;
+            font-size: 20px;
+            transform: scale(0);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 进度条 */
+        .timer-track {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--primary));
+            transition: width 0.1s linear;
+        }
+
+        /* 核心卡牌区 */
+        .arena {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 200px;
+            height: 280px;
+            background: white;
+            border: 8px solid var(--dark);
+            border-radius: 24px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        #main-num { font-size: 110px; font-weight: 900; color: var(--dark); margin: 0; }
+        #mod-badge {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: var(--danger);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            transform: rotate(5deg);
+        }
+
+        /* 按钮网格 */
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+
+        .num-btn {
+            aspect-ratio: 1/1;
+            border: none;
+            background: var(--dark);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .num-btn:active { transform: scale(0.9); background: var(--primary); }
+
+        /* 遮罩层 */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.98);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            border-radius: inherit;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            border-radius: 35px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
+        }
+
+        /* 动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            60% { transform: translateX(10px); }
+        }
+        .animate-shake { animation: shake 0.4s ease; }
+        
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2); }
+
+        .btn-correct { background: var(--success) !important; }
+        .btn-wrong { background: var(--danger) !important; }
+        .hint-pulse { animation: hint-blink 0.5s infinite alternate; }
+        @keyframes hint-blink {
+            from { background: var(--dark); }
+            to { background: var(--success); transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="header">
+        <div class="score-pill">最高: <span id="best-val">0</span></div>
+        <div id="combo-display">COMBO x0</div>
+        <div class="score-pill">得分: <span id="score-val">0</span></div>
+    </div>
+
+    <div class="timer-track">
+        <div id="timer-bar"></div>
+    </div>
+
+    <div class="arena">
+        <div class="card" id="card-obj">
+            <div id="mod-badge">±?</div>
+            <h1 id="main-num">?</h1>
+        </div>
+    </div>
+
+    <div class="input-grid" id="btn-grid"></div>
+
+    <div id="menu" class="overlay">
+        <h1 id="menu-title" style="font-size: 42px; margin: 0; color: var(--primary);">7 ATE 9</h1>
+        <p id="menu-desc" style="color: #666; margin: 15px 0;">快速口算中心数字的加减结果</p>
+        
+        <div style="margin: 20px 0;">
+            <p style="font-size: 14px; margin-bottom: 10px;">选择难度</p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="setLvl(0)" class="lvl-btn" id="l0">初级</button>
+                <button onclick="setLvl(1)" class="lvl-btn active" id="l1">中级</button>
+                <button onclick="setLvl(2)" class="lvl-btn" id="l2">地狱</button>
+            </div>
+        </div>
+
+        <button class="btn-main" onclick="Game.init()">进入挑战</button>
+    </div>
+</div>
+
+<style>
+    .lvl-btn {
+        border: 2px solid var(--primary);
+        background: none;
+        padding: 8px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .lvl-btn.active { background: var(--primary); color: white; }
+</style>
+
+<script>
+/**
+ * 核心游戏引擎
+ */
+const Game = {
+    score: 0,
+    best: localStorage.getItem('7ate9_pages_best') || 0,
+    combo: 0,
+    level: 1, // 0, 1, 2
+    active: false,
+    timeLeft: 100,
+    timer: null,
+    
+    current: { main: 0, mod: 0 },
+
+    setup() {
+        // 构建按钮
+        const grid = document.getElementById('btn-grid');
+        for(let i=1; i<=10; i++) {
+            const b = document.createElement('button');
+            b.className = 'num-btn';
+            b.id = `n-${i}`;
+            b.innerText = i;
+            b.onclick = () => this.handlePress(i, b);
+            grid.appendChild(b);
+        }
+        document.getElementById('best-val').innerText = this.best;
+    },
+
+    init() {
+        this.score = 0;
+        this.combo = 0;
+        this.timeLeft = 100;
+        this.active = true;
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('score-val').innerText = '0';
+        this.newRound();
+        this.startTicker();
+    },
+
+    startTicker() {
+        if(this.timer) clearInterval(this.timer);
+        const speeds = [0.4, 0.7, 1.3];
+        this.timer = setInterval(() => {
+            if(!this.active) return;
+            this.timeLeft -= speeds[this.level];
+            document.getElementById('timer-bar').style.width = this.timeLeft + '%';
+            if(this.timeLeft <= 0) this.stop('timeout');
+        }, 100);
+    },
+
+    newRound() {
+        this.current.main = Math.floor(Math.random() * 10) + 1;
+        const mods = [[1, 2], [1, 2, 3], [1, 2, 3, 4, 5]][this.level];
+        this.current.mod = mods[Math.floor(Math.random() * mods.length)];
+
+        const card = document.getElementById('card-obj');
+        document.getElementById('main-num').innerText = this.current.main;
+        document.getElementById('mod-badge').innerText = '±' + this.current.mod;
+        
+        card.classList.remove('animate-pop');
+        void card.offsetWidth;
+        card.classList.add('animate-pop');
+    },
+
+    handlePress(num, el) {
+        if(!this.active) return;
+
+        const ans = this.getAns();
+        if(ans.includes(num)) {
+            this.score++;
+            this.combo++;
+            this.timeLeft = Math.min(100, this.timeLeft + Math.max(5, 12 - this.score/4));
+            
+            // 界面更新
+            document.getElementById('score-val').innerText = this.score;
+            this.updateCombo();
+            
+            el.classList.add('btn-correct');
+            setTimeout(() => el.classList.remove('btn-correct'), 200);
+            this.newRound();
+        } else {
+            el.classList.add('btn-wrong');
+            this.showHelp(ans);
+            this.stop('wrong');
+        }
+    },
+
+    getAns() {
+        let p = this.current.main + this.current.mod;
+        let m = this.current.main - this.current.mod;
+        while(p > 10) p -= 10;
+        while(m < 1) m += 10;
+        return [p, m];
+    },
+
+    updateCombo() {
+        const c = document.getElementById('combo-display');
+        if(this.combo > 2) {
+            c.innerText = `COMBO x${this.combo}`;
+            c.style.transform = `scale(${1 + this.combo*0.05})`;
+        } else {
+            c.style.transform = `scale(0)`;
+        }
+    },
+
+    showHelp(ans) {
+        ans.forEach(a => {
+            const b = document.getElementById(`n-${a}`);
+            b.classList.add('hint-pulse');
+            setTimeout(() => b.classList.remove('hint-pulse'), 1500);
+        });
+        document.getElementById('card-obj').classList.add('animate-shake');
+        setTimeout(() => document.getElementById('card-obj').classList.remove('animate-shake'), 400);
+    },
+
+    stop(type) {
+        this.active = false;
+        clearInterval(this.timer);
+        
+        const t = document.getElementById('menu-title');
+        const d = document.getElementById('menu-desc');
+        
+        t.innerText = type === 'timeout' ? "时间到！" : "算错啦！";
+        t.style.color = "var(--danger)";
+        
+        if(this.score > this.best) {
+            this.best = this.score;
+            localStorage.setItem('7ate9_pages_best', this.best);
+            d.innerHTML = `<span style="color:var(--success); font-weight:bold;">新纪录！得分: ${this.score}</span>`;
+        } else {
+            d.innerText = `最终得分: ${this.score}`;
+        }
+
+        document.getElementById('best-val').innerText = this.best;
+        document.getElementById('menu').classList.remove('hidden');
+    }
+};
+
+function setLvl(l) {
+    Game.level = l;
+    document.querySelectorAll('.lvl-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === l);
+    });
+}
+
+// 启动
+Game.setup();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"31473f4f6b3246078bbee69a03ae4352","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
