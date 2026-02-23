@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字解密侦探：终极重构版</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.95);
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            background: var(--dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 动态背景 Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            perspective: 1000px;
+        }
+
+        .game-card {
+            background: var(--glass);
+            border-radius: 32px;
+            padding: 40px 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        header h1 {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .subtitle { color: #64748b; font-size: 14px; margin: 8px 0 30px; }
+
+        /* 输入槽位 */
+        .slot-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .slot {
+            width: 65px;
+            height: 80px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 36px;
+            font-weight: 800;
+            text-align: center;
+            background: #fff;
+            color: var(--dark);
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slot:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        /* 统计栏 */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .stats-item span { color: var(--primary); font-size: 16px; }
+
+        /* 操作按钮 */
+        .action-area { display: flex; flex-direction: column; gap: 15px; }
+
+        .btn {
+            padding: 18px;
+            border: none;
+            border-radius: 18px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-submit:active { transform: scale(0.95); }
+
+        .btn-ghost { background: transparent; color: #64748b; font-size: 14px; }
+
+        /* 历史面板 */
+        .history-wrap {
+            margin-top: 35px;
+            height: 180px;
+            overflow-y: auto;
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            padding: 10px 0;
+        }
+
+        .history-card {
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            text-align: left;
+            border: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            animation: popIn 0.4s ease-out forwards;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .history-num {
+            background: var(--dark);
+            color: white;
+            width: 80px;
+            text-align: center;
+            border-radius: 8px;
+            padding: 5px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .history-text { flex: 1; font-size: 13px; color: #475569; line-height: 1.4; }
+
+        /* 全屏模态框 */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            backdrop-filter: blur(8px);
+        }
+
+        .overlay h2 { font-size: 40px; margin-bottom: 10px; }
+        .rank-tag {
+            padding: 8px 20px;
+            background: var(--success);
+            border-radius: 50px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        /* 滚动条 */
+        .history-wrap::-webkit-scrollbar { width: 4px; }
+        .history-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="main-wrapper">
+        <div class="game-card" id="mainCard">
+            <header>
+                <h1>数字侦探</h1>
+                <p class="subtitle">锁定 4 位神秘代码 (1-6)</p>
+            </header>
+
+            <div class="stats-bar">
+                <div class="stats-item">步数: <span id="stepCount">0</span></div>
+                <div class="stats-item">最佳纪录: <span id="bestScore">--</span></div>
+            </div>
+
+            <div class="slot-container">
+                <input type="number" pattern="[1-6]*" class="slot" id="s0">
+                <input type="number" pattern="[1-6]*" class="slot" id="s1">
+                <input type="number" pattern="[1-6]*" class="slot" id="s2">
+                <input type="number" pattern="[1-6]*" class="slot" id="s3">
+            </div>
+
+            <div class="action-area">
+                <button class="btn btn-submit" onclick="Game.check()">分析结论 (Enter)</button>
+                <button class="btn btn-ghost" onclick="Game.reset()">放弃并重开</button>
+            </div>
+
+            <div class="history-wrap" id="historyBox"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="winModal">
+        <h2>🎉 真相大白</h2>
+        <div class="rank-tag" id="rankLabel">福尔摩斯级</div>
+        <p id="winDesc">你仅用了 4 步就破解了谜团！</p>
+        <button class="btn btn-submit" style="width: 200px;" onclick="Game.closeWin()">继续挑战</button>
+    </div>
+
+<script>
+    /**
+     * 粒子系统 - 增强视觉体验
+     */
+    const CanvasBg = {
+        init() {
+            this.cvs = document.getElementById('bgCanvas');
+            this.ctx = this.cvs.getContext('2d');
+            this.p = [];
+            window.onresize = () => this.resize();
+            this.resize();
+            this.animate();
+        },
+        resize() {
+            this.cvs.width = window.innerWidth;
+            this.cvs.height = window.innerHeight;
+        },
+        animate() {
+            this.ctx.clearRect(0, 0, this.cvs.width, this.cvs.height);
+            if(this.p.length < 50) this.p.push({
+                x: Math.random() * this.cvs.width,
+                y: Math.random() * this.cvs.height,
+                r: Math.random() * 2 + 1,
+                vx: Math.random() * 0.5 - 0.25,
+                vy: Math.random() * 0.5 - 0.25
+            });
+            this.p.forEach(pt => {
+                pt.x += pt.vx; pt.y += pt.vy;
+                this.ctx.beginPath();
+                this.ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI*2);
+                this.ctx.fillStyle = '#6366f1';
+                this.ctx.fill();
+            });
+            requestAnimationFrame(() => this.animate());
+        }
+    };
+
+    /**
+     * 游戏核心引擎
+     */
+    const Game = {
+        answer: [],
+        steps: 0,
+        isOver: false,
+        best: localStorage.getItem('detective-best') || Infinity,
+
+        init() {
+            CanvasBg.init();
+            this.setupInputs();
+            this.reset();
+            if(this.best !== Infinity) document.getElementById('bestScore').innerText = this.best;
+        },
+
+        setupInputs() {
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach((s, i) => {
+                s.oninput = (e) => {
+                    const v = e.target.value.replace(/[^1-6]/g, '');
+                    e.target.value = v ? v.slice(-1) : '';
+                    if(e.target.value && i < 3) slots[i+1].focus();
+                };
+                s.onkeydown = (e) => {
+                    if(e.key === 'Backspace' && !s.value && i > 0) slots[i-1].focus();
+                    if(e.key === 'Enter') this.check();
+                };
+            });
+        },
+
+        reset() {
+            const pool = [1,2,3,4,5,6];
+            this.answer = pool.sort(() => Math.random() - 0.5).slice(0, 4);
+            this.steps = 0;
+            this.isOver = false;
+            document.getElementById('stepCount').innerText = '0';
+            document.getElementById('historyBox').innerHTML = '';
+            document.querySelectorAll('.slot').forEach(s => s.value = '');
+            document.querySelectorAll('.slot')[0].focus();
+            console.log("🕵️ 内部情报：", this.answer.join(''));
+        },
+
+        check() {
+            if(this.isOver) return;
+            const slots = document.querySelectorAll('.slot');
+            const guess = Array.from(slots).map(s => parseInt(s.value));
+            
+            if(guess.some(isNaN)) {
+                this.shake();
+                return;
+            }
+
+            this.steps++;
+            document.getElementById('stepCount').innerText = this.steps;
+
+            let a = 0, b = 0;
+            guess.forEach((v, i) => {
+                if(v === this.answer[i]) a++;
+                else if(this.answer.includes(v)) b++;
+            });
+
+            this.addLog(guess, this.getSpeak(a, b));
+
+            if(a === 4) this.win();
+        },
+
+        getSpeak(a, b) {
+            if(a === 0 && b === 0) return "毫无进展。这几个数字甚至不在密码本里。";
+            let res = "";
+            if(a > 0) res += `**${a}** 个数字已经完全锁定位置；`;
+            if(b > 0) res += `**${b}** 个数字是对的，但位置还不对。`;
+            return res;
+        },
+
+        addLog(g, m) {
+            const box = document.getElementById('historyBox');
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `<div class="history-num">${g.join(' ')}</div><div class="history-text">${m}</div>`;
+            box.prepend(card);
+        },
+
+        shake() {
+            const card = document.getElementById('mainCard');
+            card.style.transform = "translateX(10px)";
+            setTimeout(() => card.style.transform = "translateX(-10px)", 50);
+            setTimeout(() => card.style.transform = "translateX(0)", 100);
+        },
+
+        win() {
+            this.isOver = true;
+            if(this.steps < this.best) {
+                this.best = this.steps;
+                localStorage.setItem('detective-best', this.best);
+                document.getElementById('bestScore').innerText = this.best;
+            }
+
+            const modal = document.getElementById('winModal');
+            const label = document.getElementById('rankLabel');
+            
+            if(this.steps <= 3) label.innerText = "神级侦探：福尔摩斯";
+            else if(this.steps <= 6) label.innerText = "高级督察";
+            else label.innerText = "新人巡警";
+
+            document.getElementById('winDesc').innerText = `真相大白！你经过 ${this.steps} 轮缜密推理，成功破获了这串代码。`;
+            modal.style.display = 'flex';
+        },
+
+        closeWin() {
+            document.getElementById('winModal').style.display = 'none';
+            this.reset();
+        }
+    };
+
+    window.onload = () => Game.init();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"31473f4f6b3246078bbee69a03ae4352","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
