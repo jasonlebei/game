@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sudoku Zen Pro - 动态尺寸版</title>
+    <style>
+        :root {
+            --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff;
+            --text: #2b2d42; --fixed-bg: #e9ecef;
+            --select-color: rgba(67, 97, 238, 0.25);
+            /* 基础容器宽度 */
+            --grid-max-width: min(92vw, 450px);
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a2e; --card: #16213e; --text: #e9ecef;
+            --fixed-bg: #0f3460; --primary: #4cc9f0;
+            --select-color: rgba(76, 201, 240, 0.3);
+        }
+        body {
+            font-family: -apple-system, system-ui, sans-serif; background: var(--bg);
+            color: var(--text); margin: 0; display: flex; flex-direction: column;
+            align-items: center; transition: background 0.3s; touch-action: manipulation;
+        }
+        .container { width: 100%; max-width: 500px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+        .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+        /* 棋盘容器：宽度固定，格子通过 grid-template-columns: repeat(N, 1fr) 自动撑大 */
+        .grid-wrapper { 
+            position: relative; 
+            width: var(--grid-max-width);
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            background: var(--text); 
+        }
+        #grid { 
+            display: grid; 
+            border: 2px solid var(--text); 
+            gap: 1px; 
+            width: 100%;
+        }
+        
+        #start-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+            backdrop-filter: blur(4px); transition: 0.5s; gap: 15px;
+        }
+
+        .cell {
+            background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+            /* 字体大小根据格子宽度动态调整 */
+            font-size: 24px; 
+            transition: background 0.1s;
+            position: relative; cursor: pointer;
+            box-sizing: border-box;
+        }
+        .cell.fixed { background: var(--fixed-bg); color: #888; pointer-events: none; }
+        .cell.selected { background-color: var(--select-color) !important; box-shadow: inset 0 0 0 3px var(--primary); z-index: 2; }
+        .cell.error-mark { color: #f72585; animation: shake 0.3s; }
+
+        .border-r { border-right: 3px solid var(--text) !important; }
+        .border-b { border-bottom: 3px solid var(--text) !important; }
+
+        .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; margin-top: 20px; }
+        .key {
+            background: var(--card); border: none; padding: 12px 0; border-radius: 10px;
+            font-size: 16px; color: var(--text); box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer;
+        }
+        .key:active { transform: scale(0.9); background: var(--primary); color: white; }
+
+        .mode-select { display: flex; gap: 8px; margin-bottom: 10px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-check { background: var(--primary); color: white; }
+        .btn-outline { background: var(--card); color: var(--text); border: 1px solid #ddd; }
+
+        #modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px); z-index: 1000;
+        }
+        #modal {
+            background: var(--card); padding: 25px; border-radius: 24px; text-align: center;
+            width: 280px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transform: scale(0.3) translateY(100px); opacity: 0;
+        }
+        #modal-overlay.show { display: flex; animation: fadeIn 0.3s forwards; }
+        #modal-overlay.show #modal { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { to { transform: scale(1) translateY(0); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <div style="font-weight:bold">⏱️ <span id="timer">00:00</span></div>
+        <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:18px;">🌓</button>
+    </div>
+
+    <div class="grid-wrapper">
+        <div id="start-overlay">
+            <div style="color:white; font-size:20px; font-weight:bold;">选择模式</div>
+            <div class="mode-select">
+                <button class="btn btn-outline" onclick="setMode(4)">4x4</button>
+                <button class="btn btn-outline" onclick="setMode(6)">6x6</button>
+                <button class="btn btn-outline" onclick="setMode(9)">9x9</button>
+            </div>
+            <button class="btn btn-check" style="width:180px; margin-top:10px;" id="start-btn" onclick="startGame()" disabled>开始挑战</button>
+        </div>
+        <div id="grid"></div>
+    </div>
+
+    <div class="keypad" id="keypad"></div>
+
+    <div style="margin-top:20px; width:100%; display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1" onclick="askReset()">重置</button>
+        <button class="btn btn-check" style="flex:2;" onclick="checkGame()">提交验证</button>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div id="modal"><h2 id="m-title"></h2><p id="m-body"></p><div id="m-footer" style="display:flex; gap:10px;"></div></div>
+</div>
+
+<script>
+    let currentMode = 9, solution = [], selectedIdx = -1, startTime, timerInterval, isPlaying = false;
+    let history = [];
+
+    const isValid = (b, i, n, size) => {
+        let r = Math.floor(i / size), c = i % size;
+        let boxW = size === 6 ? 3 : (size === 4 ? 2 : 3);
+        let boxH = size === 6 ? 2 : (size === 4 ? 2 : 3);
+        let sr = r - r % boxH, sc = c - c % boxW;
+        for (let j = 0; j < size; j++) {
+            if (b[r * size + j] === n || b[j * size + c] === n) return false;
+            let rr = sr + Math.floor(j / boxW), cc = sc + j % boxW;
+            if (b[rr * size + cc] === n) return false;
+        }
+        return true;
+    };
+
+    const solve = (b, size) => {
+        for (let i = 0; i < size * size; i++) {
+            if (b[i] === 0) {
+                let nums = Array.from({length: size}, (_, k) => k + 1).sort(() => Math.random() - 0.5);
+                for (let n of nums) {
+                    if (isValid(b, i, n, size)) {
+                        b[i] = n; if (solve(b, size)) return true; b[i] = 0;
+                    }
+                }
+                return false;
+            }
+        }
+        return true;
+    };
+
+    function setMode(size) {
+        currentMode = size;
+        document.querySelectorAll('.mode-select .btn').forEach(b => b.classList.replace('btn-check', 'btn-outline'));
+        event.target.classList.replace('btn-outline', 'btn-check');
+        document.getElementById('start-btn').disabled = false;
+        initGame();
+    }
+
+    function initGame() {
+        isPlaying = false; history = []; updateUndoButton();
+        clearInterval(timerInterval);
+        document.getElementById('timer').textContent = "00:00";
+        document.getElementById('start-overlay').style.display = 'flex';
+        document.getElementById('start-overlay').style.opacity = '1';
+        
+        let b = new Array(currentMode * currentMode).fill(0);
+        solve(b, currentMode); solution = [...b];
+        
+        let holes = currentMode === 4 ? 6 : (currentMode === 6 ? 15 : 42);
+        while(holes > 0) {
+            let i = Math.floor(Math.random() * b.length);
+            if(b[i] !== 0) { b[i] = 0; holes--; }
+        }
+
+        const g = document.getElementById('grid');
+        // 关键：动态设置列数，每列宽度为 1fr (等分总宽度)
+        g.style.gridTemplateColumns = `repeat(${currentMode}, 1fr)`;
+        g.innerHTML = '';
+        
+        // 计算每个格子的动态高度（总宽 / 列数）
+        const containerWidth = g.offsetWidth || parseInt(window.getComputedStyle(document.querySelector('.grid-wrapper')).width);
+        const cellSize = (containerWidth / currentMode) - 1;
+
+        b.forEach((v, i) => {
+            const c = document.createElement('div');
+            c.className = 'cell' + (v !== 0 ? ' fixed' : '');
+            c.style.height = `${cellSize}px`; // 确保是正方形
+            c.style.fontSize = `${cellSize * 0.5}px`; // 字体大小为格子的一半
+            
+            let r = Math.floor(i / currentMode), col = i % currentMode;
+            let boxW = currentMode === 6 ? 3 : (currentMode === 4 ? 2 : 3);
+            let boxH = currentMode === 6 ? 2 : (currentMode === 4 ? 2 : 3);
+            if ((col + 1) % boxW === 0 && col < currentMode - 1) c.classList.add('border-r');
+            if ((r + 1) % boxH === 0 && r < currentMode - 1) c.classList.add('border-b');
+            
+            c.id = 'cell-' + i;
+            c.textContent = v || '';
+            if(v === 0) c.onclick = () => { if(isPlaying) select(i); };
+            g.appendChild(c);
+        });
+        buildKeypad();
+        selectedIdx = -1;
+    }
+
+    function buildKeypad() {
+        const kp = document.getElementById('keypad');
+        kp.innerHTML = '';
+        for(let i=1; i<=currentMode; i++) {
+            kp.innerHTML += `<button class="key" onclick="inputNum(${i})">${i}</button>`;
+        }
+        kp.innerHTML += `<button class="key" onclick="inputNum(0)">⌫</button>`;
+        kp.innerHTML += `<button class="key" id="undo-btn" onclick="undo()" style="grid-column: span 2; background:#ff9f4322">撤销</button>`;
+    }
+
+    function startGame() {
+        isPlaying = true;
+        document.getElementById('start-overlay').style.opacity = '0';
+        setTimeout(() => document.getElementById('start-overlay').style.display = 'none', 500);
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            let sec = Math.floor((Date.now()-startTime)/1000);
+            document.getElementById('timer').textContent = `${Math.floor(sec/60).toString().padStart(2,'0')}:${(sec%60).toString().padStart(2,'0')}`;
+        }, 1000);
+    }
+
+    function select(i) {
+        const target = document.getElementById('cell-'+i);
+        if (!target || target.classList.contains('fixed')) return;
+        document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
+        selectedIdx = i;
+        target.classList.add('selected');
+    }
+
+    function inputNum(n, isUndo = false) {
+        if(!isPlaying || selectedIdx === -1) return;
+        const c = document.getElementById('cell-'+selectedIdx);
+        const oldVal = c.textContent || '';
+        const newVal = n === 0 ? '' : n.toString();
+        if (oldVal === newVal) return;
+        if (!isUndo) { history.push({ idx: selectedIdx, val: oldVal }); updateUndoButton(); }
+        c.textContent = newVal;
+        c.classList.remove('error-mark');
+        c.style.color = "var(--primary)";
+    }
+
+    function undo() {
+        if (history.length === 0 || !isPlaying) return;
+        const last = history.pop();
+        select(last.idx);
+        inputNum(last.val === '' ? 0 : parseInt(last.val), true);
+        updateUndoButton();
+    }
+
+    function updateUndoButton() {
+        const btn = document.getElementById('undo-btn');
+        if(btn) btn.disabled = history.length === 0;
+    }
+
+    function findNext(curr, dir) {
+        let n = curr, size = currentMode;
+        while(true) {
+            if(dir==='Right') n = (n%size < size-1)?n+1:n;
+            else if(dir==='Left') n = (n%size > 0)?n-1:n;
+            else if(dir==='Down') n = (n < size*(size-1))?n+size:n;
+            else if(dir==='Up') n = (n >= size)?n-size:n;
+            if(n===curr) return curr;
+            if(!document.getElementById('cell-'+n).classList.contains('fixed')) return n;
+            curr = n;
+        }
+    }
+
+    function showModal(t, b, btns) {
+        document.getElementById('m-title').textContent = t;
+        document.getElementById('m-body').textContent = b;
+        const f = document.getElementById('m-footer'); f.innerHTML = '';
+        btns.forEach(btn => {
+            const el = document.createElement('button');
+            el.className = `btn ${btn.class}`; el.style.flex = "1";
+            el.textContent = btn.text; el.onclick = () => { closeModal(); btn.onClick(); };
+            f.appendChild(el);
+        });
+        document.getElementById('modal-overlay').classList.add('show');
+    }
+
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+    function askReset() {
+        showModal("重置游戏", "确认重新开始本关吗？", [
+            { text: "取消", class: "btn-outline", onClick: () => {} },
+            { text: "确定", class: "btn-check", onClick: () => initGame() }
+        ]);
+    }
+
+    function checkGame() {
+        if(!isPlaying) return;
+        let empty = 0, wrong = 0;
+        document.querySelectorAll('.cell').forEach((c, i) => {
+            let v = parseInt(c.textContent);
+            if(!v) empty++; else if(v !== solution[i]) { wrong++; c.classList.add('error-mark'); }
+        });
+        if(empty > 0) showModal("提示", "还没填满哦。", [{ text: "知道了", class: "btn-check", onClick: ()=>{} }]);
+        else if(wrong > 0) showModal("检查结果", `有 ${wrong} 处错误。`, [{ text: "继续努力", class: "btn-check", onClick: ()=>{} }]);
+        else { 
+            clearInterval(timerInterval); 
+            showModal("挑战成功", `耗时 ${document.getElementById('timer').textContent}`, [{ text: "再来一局", class: "btn-check", onClick: ()=>initGame() }]);
+        }
+    }
+
+    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+
+    document.addEventListener('keydown', e => {
+        if(!isPlaying || selectedIdx === -1) return;
+        if(e.key >= 1 && e.key <= currentMode) inputNum(parseInt(e.key));
+        if(e.key === 'Backspace') inputNum(0);
+        if((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+        if(e.key.startsWith('Arrow')) { e.preventDefault(); select(findNext(selectedIdx, e.key.replace('Arrow', ''))); }
+    });
+
+    // 监听窗口缩放，保持格子正方形
+    window.addEventListener('resize', () => { if(currentMode) initGame(); });
+
+    // 初始化显示 9x9 预览
+    initGame();
+</script>
+</body>
+</html>
