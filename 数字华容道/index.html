@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>自适应数字华容道</title>
+    <style>
+        :root {
+            --bg-color: #faf8ef;
+            --board-color: #bbada0;
+            --tile-color: #eee4da;
+            --text-color: #776e65;
+            --accent-color: #8f7a66;
+            /* 关键：自适应计算方块大小 */
+            --tile-size: min(70px, 14vw); 
+            --tile-gap: min(8px, 1.5vw);
+        }
+
+        body {
+            font-family: 'PingFang SC', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        #game-container {
+            background-color: var(--board-color);
+            border-radius: 6px;
+            padding: var(--tile-gap);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 95vw; /* 确保不超出屏幕宽度 */
+        }
+
+        #game-board {
+            display: grid;
+            gap: var(--tile-gap);
+        }
+
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            background-color: var(--tile-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 动态字体：方块越小字越小 */
+            font-size: calc(var(--tile-size) * 0.4);
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+
+        .tile:active { transform: scale(0.9); background-color: #ede0c8; }
+        .tile.empty { visibility: hidden; }
+
+        .btn-group { margin-top: 20px; display: flex; gap: 10px; }
+        button {
+            padding: 10px 18px;
+            border: none; border-radius: 5px;
+            background-color: var(--accent-color);
+            color: white; font-size: 0.9rem; font-weight: bold;
+        }
+
+        /* 弹窗动画保持不变，添加宽度适配 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: white;
+            padding: 25px; border-radius: 12px;
+            text-align: center; width: 80%; max-width: 300px;
+        }
+
+        .slide-in { animation: slideIn 0.5s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .slide-out { animation: slideOut 0.4s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+
+        @keyframes slideIn { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
+        @keyframes slideOut { from { transform: translateY(0); } to { transform: translateY(100vh); } }
+
+        input { width: 60px; padding: 10px; font-size: 1.2rem; text-align: center; margin: 10px 0; }
+        #error-msg { color: #e74c3c; font-size: 0.8rem; display: block; min-height: 1rem; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: var(--text-color); margin-bottom: 10px;">数字华容道</h2>
+
+    <div class="stats">
+        <span>步数: <span id="steps">0</span></span>
+        <span>时间: <span id="timer">00:00</span></span>
+    </div>
+
+    <div id="game-container">
+        <div id="game-board"></div>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="toggleModal('configModal', true)">难度</button>
+        <button onclick="startGame()">重置</button>
+    </div>
+
+    <div id="configModal" class="modal-overlay">
+        <div class="modal">
+            <h3>选择阶数</h3>
+            <p>请输入 3 - 6</p>
+            <input type="number" id="gridInput" value="4" min="3" max="6">
+            <span id="error-msg"></span>
+            <button onclick="applyConfig()">开始</button>
+        </div>
+    </div>
+
+    <div id="winModal" class="modal-overlay">
+        <div class="modal">
+            <h2 style="color: #2ecc71;">Win! 🎉</h2>
+            <p id="resultText"></p>
+            <button onclick="toggleModal('winModal', false, true)">再来</button>
+        </div>
+    </div>
+
+    <script>
+        let size = 4;
+        let tiles = [];
+        let steps = 0;
+        let timer = null;
+        let seconds = 0;
+        let isStarted = false;
+
+        const board = document.getElementById('game-board');
+        const stepDisplay = document.getElementById('steps');
+        const timerDisplay = document.getElementById('timer');
+
+        function startGame() {
+            clearInterval(timer);
+            seconds = 0; steps = 0; isStarted = false;
+            updateStats();
+            tiles = Array.from({length: size * size - 1}, (_, i) => i + 1);
+            tiles.push(0); 
+            do { shuffle(tiles); } while (!isSolvable(tiles));
+            renderBoard();
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function isSolvable(arr) {
+            let inv = 0;
+            const flat = arr.filter(x => x !== 0);
+            for (let i = 0; i < flat.length; i++) {
+                for (let j = i + 1; j < flat.length; j++) if (flat[i] > flat[j]) inv++;
+            }
+            if (size % 2 !== 0) return inv % 2 === 0;
+            const rowFromBottom = size - Math.floor(arr.indexOf(0) / size);
+            return (rowFromBottom % 2 === 0) ? (inv % 2 !== 0) : (inv % 2 === 0);
+        }
+
+        function renderBoard() {
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            tiles.forEach((num, index) => {
+                const tile = document.createElement('div');
+                tile.className = `tile ${num === 0 ? 'empty' : ''}`;
+                tile.textContent = num || '';
+                tile.onclick = () => tryMove(index);
+                board.appendChild(tile);
+            });
+        }
+
+        function tryMove(index) {
+            const emptyIdx = tiles.indexOf(0);
+            const r = Math.floor(index / size), c = index % size;
+            const er = Math.floor(emptyIdx / size), ec = emptyIdx % size;
+            if (Math.abs(r - er) + Math.abs(c - ec) === 1) {
+                if (!isStarted) startTimer();
+                [tiles[index], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[index]];
+                steps++;
+                updateStats();
+                renderBoard();
+                checkWin();
+            }
+        }
+
+        // 键盘支持
+        document.addEventListener('keydown', (e) => {
+            if (document.querySelector('.modal-overlay[style*="display: flex"]')) return;
+            const emptyIdx = tiles.indexOf(0);
+            const r = Math.floor(emptyIdx / size), c = emptyIdx % size;
+            let targetIdx = -1;
+            switch(e.key.toLowerCase()) {
+                case 'arrowup': case 'w': if (r < size - 1) targetIdx = (r + 1) * size + c; break;
+                case 'arrowdown': case 's': if (r > 0) targetIdx = (r - 1) * size + c; break;
+                case 'arrowleft': case 'a': if (c < size - 1) targetIdx = r * size + (c + 1); break;
+                case 'arrowright': case 'd': if (c > 0) targetIdx = r * size + (c - 1); break;
+            }
+            if (targetIdx !== -1) { e.preventDefault(); tryMove(targetIdx); }
+        });
+
+        function startTimer() {
+            isStarted = true;
+            timer = setInterval(() => {
+                seconds++;
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                timerDisplay.textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function updateStats() {
+            stepDisplay.textContent = steps;
+            if (seconds === 0) timerDisplay.textContent = "00:00";
+        }
+
+        function checkWin() {
+            if (tiles.slice(0, -1).every((v, i) => v === i + 1)) {
+                clearInterval(timer);
+                document.getElementById('resultText').innerText = `步数：${steps} | 时间：${timerDisplay.textContent}`;
+                setTimeout(() => toggleModal('winModal', true), 200);
+            }
+        }
+
+        function toggleModal(modalId, show, restart = false) {
+            const el = document.getElementById(modalId);
+            const m = el.querySelector('.modal');
+            if (show) {
+                el.style.display = 'flex';
+                m.className = 'modal slide-in';
+            } else {
+                m.className = 'modal slide-out';
+                setTimeout(() => { el.style.display = 'none'; if (restart) startGame(); }, 400);
+            }
+        }
+
+        function applyConfig() {
+            const val = parseInt(document.getElementById('gridInput').value);
+            if (val >= 3 && val <= 6) {
+                size = val;
+                toggleModal('configModal', false, true);
+            } else {
+                document.getElementById('error-msg').innerText = "仅限 3-6";
+            }
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
