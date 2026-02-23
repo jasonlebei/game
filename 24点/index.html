@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>24点大师 Pro - 益智算术游戏</title>
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f4ae.png">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --btn-op: #334155;
+            --text-dim: #94a3b8;
+        }
+
+        body { 
+            font-family: 'PingFang SC', system-ui, -apple-system, sans-serif; 
+            background-color: var(--bg); color: white;
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; touch-action: manipulation;
+        }
+
+        .container { 
+            background: var(--card-bg); padding: 1.5rem; border-radius: 32px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); 
+            width: 92%; max-width: 400px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* 输入区 */
+        .input-wrapper {
+            background: rgba(0,0,0,0.3); border-radius: 20px;
+            margin-bottom: 20px; border: 2px solid #334155;
+            transition: 0.3s; position: relative;
+        }
+        .input-wrapper:focus-within { border-color: var(--primary); }
+
+        #mainInput {
+            width: 100%; border: none; background: transparent;
+            padding: 22px 15px; box-sizing: border-box; color: var(--primary);
+            font-size: 1.8rem; font-weight: bold; text-align: center;
+            outline: none; letter-spacing: 2px;
+        }
+
+        /* 数字卡片 */
+        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .card { 
+            height: 85px; background: linear-gradient(145deg, #475569, #1e293b);
+            border-radius: 18px; display: flex; align-items: center; justify-content: center; 
+            font-size: 1.8rem; font-weight: 800; cursor: pointer;
+            border: 2px solid #475569; transition: 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .card.used { opacity: 0.15; transform: scale(0.9); border-color: transparent; filter: grayscale(1); }
+        .card:active { transform: scale(0.95); }
+
+        /* 符号面板 */
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .btn-op { 
+            padding: 15px 0; background: var(--btn-op); border-radius: 12px;
+            font-size: 1.2rem; font-weight: bold; border: none; color: white; cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-op:active { background: var(--primary); transform: scale(0.9); }
+        .btn-del { background: #4b1a1a; color: #ff8a8a; } /* 删除按钮颜色 */
+
+        /* 功能键 */
+        .footer-btns { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; }
+        .btn-confirm { background: var(--primary); color: white; border-radius: 12px; font-weight: bold; border:none; cursor: pointer; font-size: 1.1rem; }
+        .btn-tool { background: #1e293b; color: var(--text-dim); border: 1px solid #334155; border-radius: 12px; padding: 14px; cursor: pointer; font-size: 0.9rem; }
+
+        /* 动画与弹窗 */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal {
+            background: #1e293b; padding: 2rem; border-radius: 28px; width: 80%;
+            max-width: 320px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+            animation: modalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="gameMain">
+    <h2 style="margin: 0 0 1rem 0; font-size: 1.4rem; letter-spacing: 2px; color: var(--text-dim);">24 POINT MASTER</h2>
+    
+    <div class="input-wrapper">
+        <input type="text" id="mainInput" placeholder="请输入等式" autocomplete="off" spellcheck="false" inputmode="none">
+    </div>
+
+    <div class="cards" id="cardContainer"></div>
+
+    <div class="controls">
+        <button class="btn-op" onclick="pressKey('+')">+</button>
+        <button class="btn-op" onclick="pressKey('-')">-</button>
+        <button class="btn-op" onclick="pressKey('*')">×</button>
+        <button class="btn-op" onclick="pressKey('/')">÷</button>
+        <button class="btn-op" onclick="pressKey('(')">(</button>
+        <button class="btn-op" onclick="pressKey(')')">)</button>
+        <button class="btn-op btn-del" onclick="backspace()">← 删除</button>
+        <button class="btn-op" onclick="clearInput()" style="background: #2d3748;">清空</button>
+    </div>
+
+    <div class="footer-btns">
+        <button class="btn-confirm" onclick="checkAnswer()">验证答案</button>
+        <button class="btn-tool" onclick="nextGame()">换题</button>
+        <button class="btn-tool" onclick="showHint()">提示</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2 id="modalIcon" style="font-size: 3.5rem; margin: 0;">💡</h2>
+        <h3 id="modalTitle" style="margin: 10px 0; font-size: 1.5rem;">提示</h3>
+        <p id="modalMsg" style="color: var(--text-dim); line-height: 1.6; font-size: 1.1rem;"></p>
+        <button onclick="closeModal()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer; font-size: 1rem;">确定</button>
+    </div>
+</div>
+
+<script>
+    let nums = [];
+    const inputEl = document.getElementById('mainInput');
+
+    // 核心逻辑：监听输入以更新卡片状态
+    inputEl.addEventListener('input', updateCardStatus);
+    inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') checkAnswer();
+    });
+
+    function pressKey(char) {
+        inputEl.value += char;
+        updateCardStatus();
+        inputEl.focus();
+    }
+
+    // 删除单个字符的功能
+    function backspace() {
+        const val = inputEl.value;
+        if (val.length > 0) {
+            inputEl.value = val.substring(0, val.length - 1);
+            updateCardStatus();
+        }
+        inputEl.focus();
+    }
+
+    function addNumToInput(n) {
+        inputEl.value += n;
+        updateCardStatus();
+        inputEl.focus();
+    }
+
+    function clearInput() {
+        inputEl.value = '';
+        updateCardStatus();
+        inputEl.focus();
+    }
+
+    function updateCardStatus() {
+        const val = inputEl.value;
+        const enteredNums = (val.match(/\d+/g) || []).map(Number);
+        const cards = document.querySelectorAll('.card');
+        
+        cards.forEach((card, idx) => {
+            const num = nums[idx];
+            const foundIdx = enteredNums.indexOf(num);
+            if (foundIdx > -1) {
+                card.classList.add('used');
+                enteredNums.splice(foundIdx, 1);
+            } else {
+                card.classList.remove('used');
+            }
+        });
+    }
+
+    function solve24(a) {
+        const ops = ['+', '-', '*', '/'];
+        const backtrack = (arr) => {
+            if (arr.length === 1) return Math.abs(arr[0].val - 24) < 0.001 ? arr[0].expr : null;
+            for (let i = 0; i < arr.length; i++) {
+                for (let j = 0; j < arr.length; j++) {
+                    if (i === j) continue;
+                    const nextArr = arr.filter((_, idx) => idx !== i && idx !== j);
+                    for (let op of ops) {
+                        const n1 = arr[i], n2 = arr[j];
+                        let val, expr;
+                        if (op === '+') { val = n1.val + n2.val; expr = `(${n1.expr}+${n2.expr})`; }
+                        else if (op === '-') { val = n1.val - n2.val; expr = `(${n1.expr}-${n2.expr})`; }
+                        else if (op === '*') { val = n1.val * n2.val; expr = `(${n1.expr}*${n2.expr})`; }
+                        else if (op === '/') { if(Math.abs(n2.val)<0.001) continue; val = n1.val / n2.val; expr = `(${n1.expr}/${n2.expr})`; }
+                        const sol = backtrack([...nextArr, {val, expr}]);
+                        if (sol) return sol;
+                    }
+                }
+            }
+            return null;
+        };
+        return backtrack(a.map(n => ({val: n, expr: n.toString()})));
+    }
+
+    function nextGame() {
+        let found = false;
+        while (!found) {
+            const test = Array.from({length: 4}, () => Math.floor(Math.random() * 10) + 1);
+            if (solve24(test)) { nums = test; found = true; }
+        }
+        const container = document.getElementById('cardContainer');
+        container.innerHTML = nums.map((n, i) => `<div class="card" onclick="addNumToInput(${n})">${n}</div>`).join('');
+        inputEl.value = '';
+        updateCardStatus();
+    }
+
+    function checkAnswer() {
+        const val = inputEl.value;
+        const used = (val.match(/\d+/g) || []).map(Number).sort();
+        const target = [...nums].sort();
+
+        if (JSON.stringify(used) !== JSON.stringify(target)) {
+            triggerError("必须使用且只能使用这四个数字各一次哦！");
+            return;
+        }
+
+        try {
+            const safeExp = val.replace(/×/g, '*').replace(/÷/g, '/');
+            const res = eval(safeExp);
+            if (Math.abs(res - 24) < 0.001) {
+                showAlert("🏆 挑战成功", `太棒了！运算完全正确：\n ${val} = 24`, "success");
+                setTimeout(nextGame, 1500);
+            } else {
+                triggerError(`当前的计算结果是 ${res}，还没到24呢`);
+            }
+        } catch (e) {
+            triggerError("表达式不合法，检查一下括号或符号吧");
+        }
+    }
+
+    function triggerError(msg) {
+        document.getElementById('gameMain').classList.add('shake');
+        setTimeout(() => document.getElementById('gameMain').classList.remove('shake'), 400);
+        showAlert("提示", msg, "error");
+    }
+
+    function showAlert(title, msg, type) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalMsg').textContent = msg;
+        document.getElementById('modalIcon').textContent = type === 'success' ? '🏆' : type === 'error' ? '❌' : '💡';
+        document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+    function showHint() { showAlert("解题思路", `其中一个参考答案是：\n${solve24(nums)}`, "info"); }
+
+    nextGame();
+</script>
+</body>
+</html>
