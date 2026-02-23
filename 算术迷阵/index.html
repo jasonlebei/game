@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>算术迷阵 MathMind Pro</title>
+    <style>
+        :root {
+            --p-color: #6366f1;
+            --p-light: #818cf8;
+            --s-color: #10b981;
+            --e-color: #ef4444;
+            --bg-grad: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-dark: #1e293b;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-grad);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-dark);
+            padding: 20px;
+        }
+
+        /* 游戏主卡片 */
+        .app-shell {
+            width: 100%;
+            max-width: 380px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            padding: 30px 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 标题与得分区 */
+        .header { text-align: center; margin-bottom: 25px; }
+        .title { font-size: 1.5rem; font-weight: 800; color: var(--p-color); margin: 0; letter-spacing: -0.5px; }
+        
+        .dash {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            background: rgba(99, 102, 241, 0.05);
+            padding: 12px;
+            border-radius: 18px;
+        }
+        .dash-item { display: flex; flex-direction: column; align-items: center; }
+        .dash-label { font-size: 0.65rem; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+        .dash-val { font-size: 1.1rem; font-weight: 800; color: var(--p-color); }
+
+        /* 游戏网格 */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 10px;
+            aspect-ratio: 1 / 1;
+            margin: 25px 0;
+        }
+
+        .cell {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #fff;
+        }
+
+        /* 静态格子：符号与数字 */
+        .static { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+        .op { color: #f43f5e; background: #fff1f2; border: none; font-size: 1.4rem; }
+        .eq { color: #94a3b8; font-weight: 400; }
+
+        /* 输入框交互 */
+        .input-box {
+            border: 2px solid #cbd5e1;
+            color: var(--p-color);
+            caret-color: var(--p-color);
+            text-align: center;
+            outline: none;
+            padding: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-box:focus {
+            border-color: var(--p-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
+        }
+
+        .correct { border-color: var(--s-color) !important; background: #ecfdf5 !important; color: var(--s-color) !important; }
+        .wrong { border-color: var(--e-color) !important; background: #fef2f2 !important; animation: shake 0.4s; }
+
+        /* 按钮系统 */
+        .actions { display: flex; flex-direction: column; gap: 12px; }
+        .btn {
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-p { background: var(--p-color); color: white; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
+        .btn-p:hover { background: var(--p-light); transform: translateY(-1px); }
+        
+        .sub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-s { background: #f1f5f9; color: #475569; }
+        .btn:active { transform: scale(0.97); }
+
+        /* 消息提示框 */
+        #toast {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -20px);
+            padding: 14px 28px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 700;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+        #toast.active { opacity: 1; transform: translate(-50%, 0); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .empty { visibility: hidden; }
+    </style>
+</head>
+<body>
+
+    <div class="app-shell">
+        <div class="header">
+            <h1 class="title">算术迷阵 PRO</h1>
+            <div class="dash">
+                <div class="dash-item">
+                    <span class="dash-label">当前等级</span>
+                    <span class="dash-val" id="lvl">1</span>
+                </div>
+                <div class="dash-item">
+                    <span class="dash-label">最高连胜</span>
+                    <span class="dash-val" id="best">0</span>
+                </div>
+                <div class="dash-item">
+                    <span class="dash-label">求助机会</span>
+                    <span class="dash-val" id="hint">3</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="grid" class="game-grid"></div>
+
+        <div class="actions">
+            <button class="btn btn-p" onclick="Engine.check()">提交答案</button>
+            <div class="sub-actions">
+                <button class="btn btn-s" onclick="Engine.getHint()">提示答案</button>
+                <button class="btn btn-s" onclick="Engine.refresh()">更换题目</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        /**
+         * 游戏逻辑引擎
+         */
+        const Engine = {
+            level: 1,
+            streak: 0,
+            bestStreak: localStorage.getItem('best_streak') || 0,
+            hints: 3,
+            answers: {},
+            isDone: false,
+
+            init() {
+                document.getElementById('best').innerText = this.bestStreak;
+                this.render();
+            },
+
+            // 核心生成算法：修复了索引和范围逻辑
+            render() {
+                const grid = document.getElementById('grid');
+                grid.innerHTML = '';
+                this.answers = {};
+                this.isDone = false;
+
+                const r = (max) => Math.floor(Math.random() * max);
+                const symbols = ['+', '-', '×'];
+                
+                // 难度系数随等级增加
+                const range = 4 + Math.floor(this.level / 2);
+                const nums = [r(range)+2, r(range)+2, r(range)+2, r(range)+2]; // A, B, C, D
+                const ops = [symbols[r(3)], symbols[r(3)], symbols[r(3)], symbols[r(3)]];
+
+                const solve = (a, b, op) => op === '+' ? a+b : (op === '-' ? a-b : a*b);
+                const results = [
+                    solve(nums[0], nums[1], ops[0]), // 横 1
+                    solve(nums[2], nums[3], ops[3]), // 横 2
+                    solve(nums[0], nums[2], ops[1]), // 纵 1
+                    solve(nums[1], nums[3], ops[2])  // 纵 2
+                ];
+
+                // 5x5 矩阵映射数据结构
+                const matrix = [
+                    ['i', nums[0]], ['s op', ops[0]], ['i', nums[1]], ['s eq', '='], ['s res', results[0]],
+                    ['s op', ops[1]], ['e'],           ['s op', ops[2]], ['e'],       ['e'],
+                    ['i', nums[2]], ['s op', ops[3]], ['i', nums[3]], ['s eq', '='], ['s res', results[1]],
+                    ['s eq', '='],    ['e'],           ['s eq', '='],    ['e'],       ['e'],
+                    ['s res', results[2]], ['e'],      ['s res', results[3]], ['e'],  ['e']
+                ];
+
+                matrix.forEach((data, i) => {
+                    const [type, val] = data;
+                    const el = document.createElement(type === 'i' ? 'input' : 'div');
+                    el.className = `cell ${type === 'i' ? 'input-box' : type}`;
+                    
+                    if (type === 'i') {
+                        el.type = 'tel';
+                        el.dataset.idx = i;
+                        this.answers[i] = val;
+                        el.oninput = (e) => {
+                            e.target.classList.remove('wrong', 'correct');
+                            e.target.value = e.target.value.replace(/[^0-9-]/g, '');
+                        };
+                    } else if (type !== 'e') {
+                        el.innerText = val;
+                    }
+                    grid.appendChild(el);
+                });
+
+                document.getElementById('lvl').innerText = this.level;
+                document.getElementById('hint').innerText = this.hints;
+            },
+
+            // 严谨校验逻辑
+            check() {
+                if (this.isDone) return;
+                const inputs = document.querySelectorAll('.input-box');
+                let empty = false;
+                let error = 0;
+
+                inputs.forEach(el => {
+                    const val = el.value.trim();
+                    if (val === "") {
+                        empty = true;
+                        el.classList.add('wrong');
+                    } else if (parseInt(val) === this.answers[el.dataset.idx]) {
+                        el.classList.add('correct');
+                    } else {
+                        el.classList.add('wrong');
+                        error++;
+                    }
+                });
+
+                if (empty) return this.notify("✍️ 每一格都不能空着哦", "#f59e0b");
+
+                if (error === 0) {
+                    this.isDone = true;
+                    this.streak++;
+                    if (this.streak > this.bestStreak) {
+                        this.bestStreak = this.streak;
+                        localStorage.setItem('best_streak', this.bestStreak);
+                        document.getElementById('best').innerText = this.bestStreak;
+                    }
+                    this.notify("✨ 太棒了！下一关开启", "#10b981");
+                    setTimeout(() => { this.level++; this.render(); }, 1500);
+                } else {
+                    this.streak = 0;
+                    this.notify("❌ 逻辑不通，再检查一下", "#f43f5e");
+                }
+            },
+
+            getHint() {
+                if (this.hints <= 0) return this.notify("💡 提示次数已用光", "#64748b");
+                const empties = Array.from(document.querySelectorAll('.input-box')).filter(el => el.value === "");
+                if (empties.length === 0) return this.notify("并没有空格子可提示", "#64748b");
+                
+                const target = empties[Math.floor(Math.random() * empties.length)];
+                target.value = this.answers[target.dataset.idx];
+                target.classList.add('correct');
+                this.hints--;
+                document.getElementById('hint').innerText = this.hints;
+            },
+
+            refresh() { this.render(); },
+
+            notify(txt, color) {
+                const t = document.getElementById('toast');
+                t.innerText = txt;
+                t.style.background = color;
+                t.classList.add('active');
+                setTimeout(() => t.classList.remove('active'), 1800);
+            }
+        };
+
+        window.onload = () => Engine.init();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"31473f4f6b3246078bbee69a03ae4352","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
